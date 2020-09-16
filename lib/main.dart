@@ -43,8 +43,11 @@ class _StartupControllerState extends State<StartupController> {
               routes: {
                 StartupPage.id: (context) =>
                     StartupPage(saveProfile: _handleProfileChange),
-                AdminAuthPage.loginId: (context) => AdminAuthPage(),
+                AdminAuthPage.loginId: (context) =>
+                    AdminAuthPage(authType: AuthType.login),
                 HomePage.id: (context) => HomePage(),
+                AdminAuthPage.registerId: (context) =>
+                    AdminAuthPage(authType: AuthType.register),
               },
             );
         }
