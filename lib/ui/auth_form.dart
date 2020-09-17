@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:touchlesspro_back4app/ui/auth_button.dart';
+import 'package:touchlesspro_back4app/ui/toggle_auth.dart';
 import 'admin_auth.dart';
 
 class AuthForm extends StatefulWidget {
@@ -57,27 +58,38 @@ class _AuthFormState extends State<AuthForm> {
                 //TODO: Login/Register the admin
               },
             ),
-            SizedBox(height: 10.0),
-            FlatButton(
-              onPressed: () {
-                if (widget.authType == AuthType.login) {
-                  Navigator.of(context)
-                      .pushReplacementNamed(AdminAuthPage.registerId);
-                } else {
-                  Navigator.of(context)
-                      .pushReplacementNamed(AdminAuthPage.loginId);
-                }
-              },
-              child: Text(
-                widget.authType == AuthType.login
-                    ? 'Don\'t have an account?'
-                    : 'Already have an account?',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.black54,
-                ),
-              ),
+            SizedBox(height: 30.0),
+            ToggleAuthWidget(
+              toggleText: widget.authType == AuthType.login
+                  ? 'Don\'t have an account? '
+                  : 'Already have an account? ',
+              richTextName:
+                  widget.authType == AuthType.login ? 'Register' : 'Login',
+              routeName: widget.authType == AuthType.login
+                  ? AdminAuthPage.registerId
+                  : AdminAuthPage.loginId,
+              richTextColor: Color(0xFF645AFF),
             ),
+            // FlatButton(
+            //   onPressed: () {
+            //     if (widget.authType == AuthType.login) {
+            //       Navigator.of(context)
+            //           .pushReplacementNamed(AdminAuthPage.registerId);
+            //     } else {
+            //       Navigator.of(context)
+            //           .pushReplacementNamed(AdminAuthPage.loginId);
+            //     }
+            //   },
+            //   child: Text(
+            //     widget.authType == AuthType.login
+            //         ? 'Don\'t have an account?'
+            //         : 'Already have an account?',
+            //     style: TextStyle(
+            //       fontSize: 18,
+            //       color: Colors.black54,
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
