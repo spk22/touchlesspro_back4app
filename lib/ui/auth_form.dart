@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:parse_server_sdk/parse_server_sdk.dart';
+import 'package:touchlesspro_back4app/services/app_keys.dart';
 import 'package:touchlesspro_back4app/ui/auth_button.dart';
 import 'package:touchlesspro_back4app/ui/toggle_auth.dart';
 import 'admin_auth.dart';
+import 'home.dart';
 
 class AuthForm extends StatefulWidget {
   final AuthType authType;
@@ -14,9 +17,22 @@ class AuthForm extends StatefulWidget {
 class _AuthFormState extends State<AuthForm> {
   final _formKey = GlobalKey<FormState>();
   String _email = '', _password = '';
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  static Map<AuthType, String> _getRouteNames = {
+    AuthType.login: AdminAuthPage.loginId,
+    AuthType.register: AdminAuthPage.registerId,
+  };
+
+  static Map<AuthType, String> _getCrossRouteNames = {
+    AuthType.login: AdminAuthPage.registerId,
+    AuthType.register: AdminAuthPage.loginId,
+  };
 
   @override
   Widget build(BuildContext context) {
+    // print(_hasError);
     return Form(
       key: _formKey,
       child: Padding(
@@ -54,8 +70,22 @@ class _AuthFormState extends State<AuthForm> {
               text: widget.authType == AuthType.login ? 'Login' : 'Register',
               color: Colors.teal,
               textColor: Colors.white,
-              onPressed: () {
-                //TODO: Login/Register the admin
+              onPressed: () async {
+                if (_formKey.currentState.validate()) {
+                  ParseUser user = ParseUser(_email, _password, _email);
+                  ParseResponse response = (widget.authType == AuthType.login)
+                      ? await user.login()
+                      : await user.signUp();
+                  if (response.success) {
+                    Navigator.of(context).pushReplacementNamed(HomePage.id);
+                  } else {
+                    setState(() {
+                      _hasError = true;
+                      _errorMessage = response.error.message;
+                    });
+                  }
+                }
+                print('errorReport: ' + _errorMessage);
               },
             ),
             SizedBox(height: 30.0),
@@ -65,9 +95,7 @@ class _AuthFormState extends State<AuthForm> {
                   : 'Already have an account? ',
               richTextName:
                   widget.authType == AuthType.login ? 'Register' : 'Login',
-              routeName: widget.authType == AuthType.login
-                  ? AdminAuthPage.registerId
-                  : AdminAuthPage.loginId,
+              routeName: _getCrossRouteNames[widget.authType],
               richTextColor: Color(0xFF645AFF),
             ),
             // FlatButton(
@@ -94,5 +122,32 @@ class _AuthFormState extends State<AuthForm> {
         ),
       ),
     );
+  }
+
+  Future<bool> initData() async {
+    await Parse().initialize(
+      AppKeys.APP_ID,
+      AppKeys.APP_API_URL,
+      clientKey: AppKeys.APP_CLIENT_KEY,
+      autoSendSessionId: true,
+      debug: true,
+      coreStore: await CoreStoreSharedPrefsImp.getInstance(),
+    );
+    return (await Parse().healthCheck()).success;
+  }
+
+  @override
+  void initState() {
+    initData().then((bool success) {
+      setState(() {
+        // ignore: unnecessary_statements
+        _hasError != success;
+      });
+    }).catchError((dynamic _) {
+      setState(() {
+        _hasError = true;
+      });
+    });
+    super.initState();
   }
 }
