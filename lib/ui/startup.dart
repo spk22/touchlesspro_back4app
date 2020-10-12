@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:touchlesspro_back4app/ui/admin_auth.dart';
-import 'package:touchlesspro_back4app/ui/home.dart';
+import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 
 class StartupPage extends StatelessWidget {
   static final id = 'startup';
@@ -60,7 +59,7 @@ class OrientationLayoutWidget extends StatelessWidget {
                     saveProfile('admin');
                     Navigator.pushNamed(
                       context,
-                      AdminAuthPage.loginId,
+                      RoutingConstants.adminLogin,
                       arguments: 'admin',
                     );
                   },
@@ -82,7 +81,7 @@ class OrientationLayoutWidget extends StatelessWidget {
                     saveProfile('user');
                     Navigator.pushNamed(
                       context,
-                      HomePage.id,
+                      RoutingConstants.home,
                       arguments: 'user',
                     );
                   },
@@ -139,7 +138,7 @@ class OrientationLayoutWidget extends StatelessWidget {
                           saveProfile('admin');
                           Navigator.pushNamed(
                             context,
-                            AdminAuthPage.loginId,
+                            RoutingConstants.adminLogin,
                             arguments: 'admin',
                           );
                         },
@@ -161,7 +160,7 @@ class OrientationLayoutWidget extends StatelessWidget {
                           saveProfile('user');
                           Navigator.pushNamed(
                             context,
-                            HomePage.id,
+                            RoutingConstants.home,
                             arguments: 'user',
                           );
                         },

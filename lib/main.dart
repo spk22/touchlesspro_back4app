@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:touchlesspro_back4app/constants/routing_constants.dart';
+import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 
 import 'ui/admin_auth.dart';
 import 'ui/home.dart';
 import 'ui/startup.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final isServerRunning = await ParseAuthService.initData();
+  print(isServerRunning.toString());
   runApp(StartupController());
 }
 
@@ -23,9 +29,13 @@ class _StartupControllerState extends State<StartupController> {
 
   @override
   void initState() {
-    super.initState();
+    // initialize profile using stored value of prefs
     _profile = _prefs
         .then((SharedPreferences prefs) => (prefs.getString('profile')) ?? '');
+
+    //TODO: Check internet connection
+
+    super.initState();
   }
 
   @override
@@ -38,17 +48,24 @@ class _StartupControllerState extends State<StartupController> {
             return const CircularProgressIndicator();
             break;
           default:
-            return MaterialApp(
-              initialRoute: _getProfileBasedRoute(snapshot.data),
-              routes: {
-                StartupPage.id: (context) =>
-                    StartupPage(saveProfile: _handleProfileChange),
-                AdminAuthPage.loginId: (context) =>
-                    AdminAuthPage(authType: AuthType.login),
-                HomePage.id: (context) => HomePage(),
-                AdminAuthPage.registerId: (context) =>
-                    AdminAuthPage(authType: AuthType.register),
-              },
+            return MultiProvider(
+              providers: [
+                Provider<ParseAuthService>(
+                  create: (_) => ParseAuthService(),
+                ),
+              ],
+              child: MaterialApp(
+                initialRoute: _getProfileBasedRoute(snapshot.data),
+                routes: {
+                  RoutingConstants.startup: (context) =>
+                      StartupPage(saveProfile: _handleProfileChange),
+                  RoutingConstants.adminLogin: (context) =>
+                      AdminAuthPage(authType: AuthType.login),
+                  RoutingConstants.home: (context) => HomePage(),
+                  RoutingConstants.adminRegister: (context) =>
+                      AdminAuthPage(authType: AuthType.register),
+                },
+              ),
             );
         }
       },
@@ -59,11 +76,11 @@ class _StartupControllerState extends State<StartupController> {
     // print(currentProfile);
     if (currentProfile != null) {
       if (currentProfile == 'admin')
-        return AdminAuthPage.loginId;
+        return RoutingConstants.adminLogin;
       else
-        return HomePage.id;
+        return RoutingConstants.home;
     } else {
-      return StartupPage.id;
+      return RoutingConstants.startup;
     }
   }
 

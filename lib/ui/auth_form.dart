@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:parse_server_sdk/parse_server_sdk.dart';
-import 'package:touchlesspro_back4app/services/app_keys.dart';
+import 'package:provider/provider.dart';
+import 'package:touchlesspro_back4app/constants/routing_constants.dart';
+import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/auth_button.dart';
 import 'package:touchlesspro_back4app/ui/toggle_auth.dart';
 import 'admin_auth.dart';
-import 'home.dart';
 
 class AuthForm extends StatefulWidget {
   final AuthType authType;
@@ -18,16 +18,15 @@ class _AuthFormState extends State<AuthForm> {
   final _formKey = GlobalKey<FormState>();
   String _email = '', _password = '';
   bool _hasError = false;
-  String _errorMessage = '';
 
-  static Map<AuthType, String> _getRouteNames = {
-    AuthType.login: AdminAuthPage.loginId,
-    AuthType.register: AdminAuthPage.registerId,
-  };
+  // static Map<AuthType, String> _getRouteNames = {
+  //   AuthType.login: AdminAuthPage.loginId,
+  //   AuthType.register: AdminAuthPage.registerId,
+  // };
 
-  static Map<AuthType, String> _getCrossRouteNames = {
-    AuthType.login: AdminAuthPage.registerId,
-    AuthType.register: AdminAuthPage.loginId,
+  static Map<AuthType, String> _crossRouteNames = {
+    AuthType.login: RoutingConstants.adminRegister,
+    AuthType.register: RoutingConstants.adminLogin,
   };
 
   @override
@@ -72,20 +71,11 @@ class _AuthFormState extends State<AuthForm> {
               textColor: Colors.white,
               onPressed: () async {
                 if (_formKey.currentState.validate()) {
-                  ParseUser user = ParseUser(_email, _password, _email);
-                  ParseResponse response = (widget.authType == AuthType.login)
-                      ? await user.login()
-                      : await user.signUp();
-                  if (response.success) {
-                    Navigator.of(context).pushReplacementNamed(HomePage.id);
-                  } else {
-                    setState(() {
-                      _hasError = true;
-                      _errorMessage = response.error.message;
-                    });
-                  }
+                  (widget.authType == AuthType.login)
+                      ? await _signIn(context)
+                      : await _signUp(context);
                 }
-                print('errorReport: ' + _errorMessage);
+                print('hasError: $_hasError');
               },
             ),
             SizedBox(height: 30.0),
@@ -95,7 +85,7 @@ class _AuthFormState extends State<AuthForm> {
                   : 'Already have an account? ',
               richTextName:
                   widget.authType == AuthType.login ? 'Register' : 'Login',
-              routeName: _getCrossRouteNames[widget.authType],
+              routeName: _crossRouteNames[widget.authType],
               richTextColor: Color(0xFF645AFF),
             ),
             // FlatButton(
@@ -124,30 +114,43 @@ class _AuthFormState extends State<AuthForm> {
     );
   }
 
-  Future<bool> initData() async {
-    await Parse().initialize(
-      AppKeys.APP_ID,
-      AppKeys.APP_API_URL,
-      clientKey: AppKeys.APP_CLIENT_KEY,
-      autoSendSessionId: true,
-      debug: true,
-      coreStore: await CoreStoreSharedPrefsImp.getInstance(),
-    );
-    return (await Parse().healthCheck()).success;
+  Future<void> _signIn(BuildContext context) async {
+    try {
+      final auth = Provider.of<ParseAuthService>(context, listen: false);
+      User user = await auth.signIn(_email, _password);
+      if (user != null) {
+        print('Object Id: ' + user.uid);
+        Navigator.of(context).pushReplacementNamed(
+          RoutingConstants.home,
+          arguments: user.uid,
+        );
+      } else {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 
-  @override
-  void initState() {
-    initData().then((bool success) {
-      setState(() {
-        // ignore: unnecessary_statements
-        _hasError != success;
-      });
-    }).catchError((dynamic _) {
-      setState(() {
-        _hasError = true;
-      });
-    });
-    super.initState();
+  Future<void> _signUp(BuildContext context) async {
+    try {
+      final auth = Provider.of<ParseAuthService>(context, listen: false);
+      User user = await auth.signUp(_email, _password);
+      if (user != null) {
+        print('Object Id: ' + user.uid);
+        Navigator.of(context).pushReplacementNamed(
+          RoutingConstants.home,
+          arguments: user.uid,
+        );
+      } else {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
   }
 }
