@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:parse_server_sdk/parse_server_sdk.dart';
+import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/app_keys.dart';
 
 @immutable
@@ -17,7 +18,7 @@ class ParseAuthService {
       clientKey: AppKeys.APP_CLIENT_KEY,
       masterKey: AppKeys.APP_MASTER_KEY,
       autoSendSessionId: false,
-      debug: true,
+      debug: false,
       coreStore: await CoreStoreSharedPrefsImp.getInstance(),
     );
     final ParseResponse parseResponse = await Parse().healthCheck();
@@ -74,4 +75,6 @@ class ParseAuthService {
     ParseResponse response = await parseUser.logout();
     return response.success;
   }
+
+  Future<void> createServicePoint(ServicePoint servicePoint) {}
 }

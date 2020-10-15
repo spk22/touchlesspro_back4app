@@ -5,6 +5,7 @@ import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 
 import 'ui/admin_auth.dart';
+import 'ui/dashboard.dart';
 import 'ui/home.dart';
 import 'ui/startup.dart';
 
@@ -64,6 +65,7 @@ class _StartupControllerState extends State<StartupController> {
                   RoutingConstants.home: (context) => HomePage(),
                   RoutingConstants.adminRegister: (context) =>
                       AdminAuthPage(authType: AuthType.register),
+                  RoutingConstants.dashboard: (context) => Dashboard(),
                 },
               ),
             );

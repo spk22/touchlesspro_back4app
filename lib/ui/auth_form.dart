@@ -121,7 +121,7 @@ class _AuthFormState extends State<AuthForm> {
       if (user != null) {
         print('Object Id: ' + user.uid);
         Navigator.of(context).pushReplacementNamed(
-          RoutingConstants.home,
+          RoutingConstants.dashboard,
           arguments: user.uid,
         );
       } else {
@@ -141,7 +141,7 @@ class _AuthFormState extends State<AuthForm> {
       if (user != null) {
         print('Object Id: ' + user.uid);
         Navigator.of(context).pushReplacementNamed(
-          RoutingConstants.home,
+          RoutingConstants.dashboard,
           arguments: user.uid,
         );
       } else {
