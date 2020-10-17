@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/auth_button.dart';
+import 'package:touchlesspro_back4app/ui/dashboard.dart';
 import 'package:touchlesspro_back4app/ui/toggle_auth.dart';
 import 'admin_auth.dart';
 
@@ -120,9 +121,13 @@ class _AuthFormState extends State<AuthForm> {
       User user = await auth.signIn(_email, _password);
       if (user != null) {
         print('Object Id: ' + user.uid);
-        Navigator.of(context).pushReplacementNamed(
-          RoutingConstants.dashboard,
-          arguments: user.uid,
+        // Navigator.of(context).pushReplacementNamed(
+        //   RoutingConstants.dashboard,
+        //   arguments: user.uid,
+        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Dashboard(uid: user.uid)),
         );
       } else {
         setState(() {
@@ -140,9 +145,13 @@ class _AuthFormState extends State<AuthForm> {
       User user = await auth.signUp(_email, _password);
       if (user != null) {
         print('Object Id: ' + user.uid);
-        Navigator.of(context).pushReplacementNamed(
-          RoutingConstants.dashboard,
-          arguments: user.uid,
+        // Navigator.of(context).pushReplacementNamed(
+        //   RoutingConstants.dashboard,
+        //   arguments: user.uid,
+        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Dashboard(uid: user.uid)),
         );
       } else {
         setState(() {

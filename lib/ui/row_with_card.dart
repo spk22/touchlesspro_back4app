@@ -1,49 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:touchlesspro_back4app/models/service_point.dart';
 
 class RowWithCardWidget extends StatelessWidget {
   const RowWithCardWidget({
     Key key,
     @required this.index,
-    @required this.label,
-    @required this.name,
+    @required this.servicePoint,
   }) : super(key: key);
 
   final int index;
-  final String label;
-  final String name;
+  final ServicePoint servicePoint;
 
-  IconData _getCategoryBasedIcon(String myLabel) {
-    IconData myIconData;
-    switch (myLabel) {
-      case 'office':
-        myIconData = Icons.work;
-        break;
-      case 'library':
-        myIconData = Icons.local_library;
-        break;
-      case 'exam':
-        myIconData = Icons.assignment;
-        break;
-      default:
-        myIconData = Icons.work;
-        break;
-    }
-    return myIconData;
-  }
+  static const Map<ServiceType, IconData> _serviceIconData = {
+    ServiceType.office: Icons.work,
+    ServiceType.library: Icons.local_library,
+    ServiceType.exam: Icons.assignment,
+  };
+
+  static const Map<ServiceType, String> _serviceLabels = {
+    ServiceType.office: 'Office',
+    ServiceType.library: 'Library',
+    ServiceType.exam: 'Exam',
+  };
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
         leading: Icon(
-          _getCategoryBasedIcon(label),
+          _serviceIconData[servicePoint.serviceType],
           size: 48.0,
           color: Colors.teal,
         ),
-        title: Text(name),
-        subtitle: Text(label),
+        title: Text(servicePoint.name),
+        subtitle: Text(_serviceLabels[servicePoint.serviceType]),
         trailing: Text(
-          '${index * 7 + 5}',
+          (servicePoint.userIds != null)
+              ? '${servicePoint.userIds.length}'
+              : '0',
           style: TextStyle(color: Colors.teal),
         ),
         //selected: true,

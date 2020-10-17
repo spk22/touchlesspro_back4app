@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:parse_server_sdk/parse_server_sdk.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/app_keys.dart';
 
@@ -36,7 +36,7 @@ class ParseAuthService {
     return _userFromParse(currentUser);
   }
 
-  // returns User that is signed in
+  // returns User after signing in
   Future<User> signIn(String userName, String password) async {
     final user = ParseUser(userName, password, userName);
     final response = await user.login();
@@ -56,6 +56,7 @@ class ParseAuthService {
     final user = ParseUser(userName, password, userName);
     final response = await user.signUp();
     if (response.success) {
+      user.set<bool>("isAdmin", true);
       return _userFromParse(user);
     } else {
       return null;
@@ -76,5 +77,62 @@ class ParseAuthService {
     return response.success;
   }
 
-  Future<void> createServicePoint(ServicePoint servicePoint) {}
+  Future<void> createServicePoint(ServicePoint servicePoint) async {
+    String servicePointName = servicePoint.name + servicePoint.adminId;
+    final ParseObject newObject = ParseObject(servicePointName);
+    await newObject.create();
+    final ParseObject newServicePoint = ParseObject('ServicePoints');
+
+    newServicePoint.set<String>('adminId', servicePoint.adminId);
+    newServicePoint.set<String>('serviceName', servicePoint.name);
+    newServicePoint.set<String>(
+        'serviceType', _typeToLabel[servicePoint.serviceType]);
+    newServicePoint.set<String>('serviceClass', servicePointName);
+    var response = await newServicePoint.create();
+    if (response.success) {
+      await newObject.delete();
+    }
+  }
+
+  Future<void> addUser(ServicePoint servicePoint, String password) async {}
+
+  static Future<List<ServicePoint>> getServiceList(String uid) async {
+    List<ServicePoint> listOfServicePoints = <ServicePoint>[];
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)..whereEqualTo('adminId', uid);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        ServiceType serviceType =
+            _labelToType[record.get<String>('serviceType')];
+        List<String> userIds = <String>[];
+        String className = record.get<String>('serviceClass');
+        var apiResponse = await ParseObject(className).getAll();
+        if (apiResponse.success && response.count > 0) {
+          if (apiResponse.results != null) {
+            for (ParseObject testObject in apiResponse.results) {
+              userIds.add(testObject.objectId);
+            }
+          }
+        }
+        listOfServicePoints.add(
+            ServicePoint.withUserIds(uid, serviceName, serviceType, userIds));
+      }
+    }
+    return listOfServicePoints;
+  }
+
+  static const Map<String, ServiceType> _labelToType = {
+    'office': ServiceType.office,
+    'library': ServiceType.library,
+    'exam': ServiceType.exam,
+  };
+
+  static const Map<ServiceType, String> _typeToLabel = {
+    ServiceType.office: "office",
+    ServiceType.library: "library",
+    ServiceType.exam: "exam",
+  };
 }

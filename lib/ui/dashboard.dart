@@ -7,22 +7,43 @@ import 'package:touchlesspro_back4app/ui/dropdown_item.dart';
 import 'package:touchlesspro_back4app/ui/row_with_card.dart';
 
 class Dashboard extends StatefulWidget {
-  Dashboard({Key key}) : super(key: key);
+  final String uid;
+  Dashboard({Key key, this.uid}) : super(key: key);
 
   @override
   _DashboardState createState() => _DashboardState();
 }
 
 class _DashboardState extends State<Dashboard> {
-  String uid;
-  List<String> labels = ['office', 'library'];
-  List<String> names = ['3R Infotech Pvt Ltd', 'Brainshapers'];
   String serviceName;
   Item selectedItem;
+  ServicePoint servicePoint;
+  List<ServicePoint> savedList;
+  List<ServicePoint> listOfServicePoints;
+
+  Future<void> _getServiceList() async {
+    savedList = await ParseAuthService.getServiceList(widget.uid);
+    setState(() {
+      listOfServicePoints = savedList;
+    });
+    // print(listOfServicePoints.first.name);
+    // if (listOfServicePoints.isEmpty) {
+    //   listOfServicePoints = <ServicePoint>[
+    //     ServicePoint('abc123', '3R Infotech Pvt Ltd', ServiceType.office),
+    //     ServicePoint('xyz456', 'Brainshapers', ServiceType.library),
+    //   ];
+    // }
+  }
+
+  @override
+  void initState() {
+    _getServiceList();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    uid = ModalRoute.of(context).settings.arguments;
+    // uid = ModalRoute.of(context).settings.arguments;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -43,14 +64,13 @@ class _DashboardState extends State<Dashboard> {
       ),
       body: SafeArea(
         child: ListView.builder(
-          //TODO: read rowCount from the ServicePoint table of User
-          itemCount: 2,
+          itemCount:
+              (listOfServicePoints != null) ? listOfServicePoints.length : 0,
           itemBuilder: (BuildContext context, int index) {
             print(index);
             return RowWithCardWidget(
               index: index,
-              label: labels[index],
-              name: names[index],
+              servicePoint: listOfServicePoints[index],
             );
           },
         ),
@@ -75,10 +95,10 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> _signOut(BuildContext context) async {
     final auth = Provider.of<ParseAuthService>(context, listen: false);
-    final result = await auth.signOut(uid);
+    final result = await auth.signOut(widget.uid);
     if (result) {
       Navigator.of(context).pushReplacementNamed(RoutingConstants.startup);
-      print('user with $uid, successfuly logged out!');
+      print('user with ${widget.uid}, successfuly logged out!');
     }
   }
 
@@ -134,13 +154,14 @@ class _DashboardState extends State<Dashboard> {
               onPressed: () async {
                 if (selectedItem != null && serviceName != null) {
                   print(
-                      'uid: $uid name: $serviceName serviceType: ${selectedItem.serviceType.toString()}');
-                  final servicePoint =
-                      ServicePoint(uid, serviceName, selectedItem.serviceType);
+                      'uid: ${widget.uid} name: $serviceName serviceType: ${selectedItem.serviceType.toString()}');
+                  servicePoint = ServicePoint(
+                      widget.uid, serviceName, selectedItem.serviceType);
                   await auth.createServicePoint(servicePoint);
                 }
                 Navigator.of(context).pop();
                 setState(() {
+                  listOfServicePoints.add(servicePoint);
                   selectedItem = null;
                   serviceName = null;
                 });

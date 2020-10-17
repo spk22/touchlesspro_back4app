@@ -7,4 +7,7 @@ class ServicePoint {
   List<String> userIds;
 
   ServicePoint(this.adminId, this.name, this.serviceType);
+
+  ServicePoint.withUserIds(
+      this.adminId, this.name, this.serviceType, this.userIds);
 }
