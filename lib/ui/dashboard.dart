@@ -63,16 +63,52 @@ class _DashboardState extends State<Dashboard> {
         ],
       ),
       body: SafeArea(
-        child: ListView.builder(
-          itemCount:
-              (listOfServicePoints != null) ? listOfServicePoints.length : 0,
-          itemBuilder: (BuildContext context, int index) {
-            print(index);
-            return RowWithCardWidget(
-              index: index,
-              servicePoint: listOfServicePoints[index],
-            );
-          },
+        child: RefreshIndicator(
+          onRefresh: _getServiceList,
+          child: ClipRect(
+            child: Overlay(
+              initialEntries: <OverlayEntry>[
+                OverlayEntry(
+                  builder: (BuildContext context) {
+                    return ListView.separated(
+                      separatorBuilder: (context, index) => SizedBox(
+                        height: 4.0,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 4.0,
+                        vertical: 8.0,
+                      ),
+                      itemBuilder: (BuildContext context, int index) {
+                        print(index);
+                        return GestureDetector(
+                          child: RowWithCardWidget(
+                              index: index,
+                              servicePoint: listOfServicePoints[index]),
+                          onLongPress: () {
+                            _showLayer(context);
+                          },
+                        );
+                      },
+                      itemCount: (listOfServicePoints != null)
+                          ? listOfServicePoints.length
+                          : 0,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          // child: ListView.builder(
+          //   itemCount:
+          //       (listOfServicePoints != null) ? listOfServicePoints.length : 0,
+          //   itemBuilder: (BuildContext context, int index) {
+          //     print(index);
+          //     return RowWithCardWidget(
+          //       index: index,
+          //       servicePoint: listOfServicePoints[index],
+          //     );
+          //   },
+          // ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -86,6 +122,8 @@ class _DashboardState extends State<Dashboard> {
       ),
     );
   }
+
+  void _showLayer(BuildContext context) {}
 
   void _handleItemChange(Item newItem) {
     setState(() {
