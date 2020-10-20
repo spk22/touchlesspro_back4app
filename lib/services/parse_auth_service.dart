@@ -94,6 +94,42 @@ class ParseAuthService {
     }
   }
 
+  Future<void> updateServiceName(
+      ServicePoint newServicePoint, ServicePoint oldServicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', oldServicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == oldServicePoint.name) {
+          record.set<String>('serviceName', newServicePoint.name);
+          record.save();
+        }
+      }
+    }
+  }
+
+  Future<void> deleteServiceFromList(ServicePoint servicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == servicePoint.name) {
+          final String className = record.get<String>('serviceClass');
+          await ParseObject(className).delete();
+          await record.delete();
+        }
+      }
+    }
+  }
+
   Future<void> addUser(ServicePoint servicePoint, String password) async {}
 
   static Future<List<ServicePoint>> getServiceList(String uid) async {

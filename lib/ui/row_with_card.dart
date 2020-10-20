@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/ui/overlayable.dart';
 
-import 'servicepoint_item.dart';
-
 class RowWithCardWidget extends StatelessWidget {
   const RowWithCardWidget({
     Key key,
     @required this.index,
     @required this.servicePoint,
+    this.onEditItem,
+    this.onViewItem,
+    this.onDeleteItem,
   }) : super(key: key);
 
   final int index;
   final ServicePoint servicePoint;
+  final ValueChanged<BuildContext> onEditItem;
+  final ValueChanged<BuildContext> onViewItem;
+  final ValueChanged<BuildContext> onDeleteItem;
 
   static const Map<ServiceType, IconData> _serviceIconData = {
     ServiceType.office: Icons.work,
@@ -44,18 +48,6 @@ class RowWithCardWidget extends StatelessWidget {
                 : '0',
             style: TextStyle(color: Colors.teal),
           ),
-          // onTap: () {
-          //   Navigator.push(
-          //     context,
-          //     MaterialPageRoute(
-          //         builder: (context) =>
-          //             ServicePointItem(servicePoint: servicePoint)),
-          //   );
-          //   print('Tapped on Row $index');
-          // },
-          // onLongPress: () {
-          //
-          // },
         ),
         elevation: 2.0,
       ),
@@ -75,7 +67,7 @@ class RowWithCardWidget extends StatelessWidget {
                 ),
                 onPressed: () {
                   onHideOverlay();
-                  _onEditItem();
+                  onEditItem(context);
                 },
               ),
               SizedBox(width: 10.0),
@@ -86,7 +78,7 @@ class RowWithCardWidget extends StatelessWidget {
                 ),
                 onPressed: () {
                   onHideOverlay();
-                  _onDeleteItem();
+                  onDeleteItem(context);
                 },
               ),
             ],
@@ -94,28 +86,26 @@ class RowWithCardWidget extends StatelessWidget {
         );
       },
       onTap: () {
-        _onViewItem(context);
+        onViewItem(context);
       },
     );
   }
 
-  void _onEditItem() {
-    //TODO: Edit the servicePoint via dialog
-    print('edit item: $index');
-  }
+  // Future<bool> _onEditItem(context) {}
 
-  void _onDeleteItem() {
-    //TODO: Delete the servicePoint via dialog
-    print('delete item: $index');
-  }
+  // void _onDeleteItem() {
+  //   //TODO: Delete the servicePoint via dialog
+  //   print('delete item: ${index}');
+  // }
 
-  void _onViewItem(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => ServicePointItem(servicePoint: servicePoint)),
-    );
-    print('Tapped on Row $index');
-    // print('view item: $index');
-  }
+  // void _onViewItem(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //         builder: (context) =>
+  //             ServicePointItem(servicePoint: widget.servicePoint)),
+  //   );
+  //   print('Tapped on Row ${index}');
+  //   // print('view item: $index');
+  // }
 }

@@ -5,6 +5,7 @@ import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 import 'package:touchlesspro_back4app/ui/dropdown_item.dart';
 import 'package:touchlesspro_back4app/ui/row_with_card.dart';
+import 'package:touchlesspro_back4app/ui/servicepoint_item.dart';
 
 class Dashboard extends StatefulWidget {
   final String uid;
@@ -72,7 +73,7 @@ class _DashboardState extends State<Dashboard> {
                   builder: (BuildContext context) {
                     return ListView.separated(
                       separatorBuilder: (context, index) => SizedBox(
-                        height: 4.0,
+                        height: 8.0,
                       ),
                       padding: EdgeInsets.symmetric(
                         horizontal: 4.0,
@@ -80,13 +81,24 @@ class _DashboardState extends State<Dashboard> {
                       ),
                       itemBuilder: (BuildContext context, int index) {
                         print(index);
-                        return GestureDetector(
-                          child: RowWithCardWidget(
-                              index: index,
-                              servicePoint: listOfServicePoints[index]),
-                          onLongPress: () {
-                            _showLayer(context);
-                          },
+                        print(listOfServicePoints[index].toString());
+                        return RowWithCardWidget(
+                          index: index,
+                          servicePoint: listOfServicePoints[index],
+                          onViewItem: (context) => _onViewItem(
+                            context,
+                            listOfServicePoints[index],
+                          ),
+                          onEditItem: (context) => _onEditItem(
+                            context,
+                            listOfServicePoints[index],
+                            index,
+                          ),
+                          onDeleteItem: (context) => _onDeleteItem(
+                            context,
+                            listOfServicePoints[index],
+                            index,
+                          ),
                         );
                       },
                       itemCount: (listOfServicePoints != null)
@@ -123,8 +135,6 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  void _showLayer(BuildContext context) {}
-
   void _handleItemChange(Item newItem) {
     setState(() {
       selectedItem = newItem;
@@ -159,6 +169,7 @@ class _DashboardState extends State<Dashboard> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 TextField(
+                  autofocus: true,
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
                     hintText: 'Enter name',
@@ -206,6 +217,146 @@ class _DashboardState extends State<Dashboard> {
               },
               child: const Text(
                 'Add',
+                style: TextStyle(color: Colors.teal),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _onViewItem(BuildContext context, ServicePoint servicePoint) {
+    // navigate to ServicePointItem page.
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => ServicePointItem(servicePoint: servicePoint),
+    ));
+  }
+
+  Future<bool> _onEditItem(
+      BuildContext context, ServicePoint itemServicePoint, int index) {
+    final auth = Provider.of<ParseAuthService>(context, listen: false);
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Edit Details',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18.0, color: Colors.teal),
+          ),
+          content: Container(
+            height: 125.0,
+            width: 150.0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                TextField(
+                  autofocus: true,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: 'Enter new name',
+                    hintStyle: TextStyle(color: Colors.teal),
+                    alignLabelWithHint: true,
+                  ),
+                  onChanged: (String value) {
+                    serviceName = value;
+                  },
+                ),
+                SizedBox(height: 5.0),
+                // TypeDropdown(saveItem: _handleItemChange),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  serviceName = null;
+                });
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.teal),
+              ),
+            ),
+            FlatButton(
+              onPressed: () async {
+                ServicePoint newServicePoint;
+                if (serviceName != null) {
+                  newServicePoint = ServicePoint(
+                    itemServicePoint.adminId,
+                    serviceName,
+                    itemServicePoint.serviceType,
+                  );
+                  await auth.updateServiceName(
+                      newServicePoint, itemServicePoint);
+                }
+                Navigator.of(context).pop();
+                setState(() {
+                  if (serviceName != null) {
+                    listOfServicePoints[index] = newServicePoint;
+                    serviceName = null;
+                  }
+                });
+              },
+              child: const Text(
+                'Save',
+                style: TextStyle(color: Colors.teal),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _onDeleteItem(
+      BuildContext context, ServicePoint itemServicePoint, int index) {
+    final auth = Provider.of<ParseAuthService>(context, listen: false);
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Delete this Service',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 18.0, color: Colors.teal),
+          ),
+          content: Container(
+            height: 125.0,
+            width: 150.0,
+            child: Center(
+              child: Text(
+                'Clicking on Confirm will delete all data saved on this Service',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16.0, color: Colors.black54),
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.teal),
+              ),
+            ),
+            FlatButton(
+              onPressed: () async {
+                await auth.deleteServiceFromList(itemServicePoint);
+                setState(() {
+                  listOfServicePoints.removeAt(index);
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Confirm',
                 style: TextStyle(color: Colors.teal),
               ),
             ),

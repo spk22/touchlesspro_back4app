@@ -55,18 +55,27 @@ class _StartupControllerState extends State<StartupController> {
                   create: (_) => ParseAuthService(),
                 ),
               ],
-              child: MaterialApp(
-                initialRoute: _getProfileBasedRoute(snapshot.data),
-                routes: {
-                  RoutingConstants.startup: (context) =>
-                      StartupPage(saveProfile: _handleProfileChange),
-                  RoutingConstants.adminLogin: (context) =>
-                      AdminAuthPage(authType: AuthType.login),
-                  RoutingConstants.home: (context) => HomePage(),
-                  RoutingConstants.adminRegister: (context) =>
-                      AdminAuthPage(authType: AuthType.register),
-                  RoutingConstants.dashboard: (context) => Dashboard(),
+              child: GestureDetector(
+                onTap: () {
+                  FocusScopeNode currentFocus = FocusScope.of(context);
+                  if (!currentFocus.hasPrimaryFocus &&
+                      currentFocus.focusedChild != null) {
+                    currentFocus.focusedChild.unfocus();
+                  }
                 },
+                child: MaterialApp(
+                  initialRoute: _getProfileBasedRoute(snapshot.data),
+                  routes: {
+                    RoutingConstants.startup: (context) =>
+                        StartupPage(saveProfile: _handleProfileChange),
+                    RoutingConstants.adminLogin: (context) =>
+                        AdminAuthPage(authType: AuthType.login),
+                    RoutingConstants.home: (context) => HomePage(),
+                    RoutingConstants.adminRegister: (context) =>
+                        AdminAuthPage(authType: AuthType.register),
+                    RoutingConstants.dashboard: (context) => Dashboard(),
+                  },
+                ),
               ),
             );
         }
