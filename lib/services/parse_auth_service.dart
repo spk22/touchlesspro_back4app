@@ -163,7 +163,8 @@ class ParseAuthService {
   }
 
   Future<void> createServicePoint(ServicePoint servicePoint) async {
-    String servicePointName = servicePoint.name + servicePoint.adminId;
+    String tempName = servicePoint.name + servicePoint.adminId;
+    String servicePointName = tempName.replaceAll(RegExp(' +'), '');
     final ParseObject newObject = ParseObject(servicePointName);
     await newObject.create();
     final ParseObject newServicePoint = ParseObject('ServicePoints');

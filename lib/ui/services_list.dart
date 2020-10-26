@@ -37,21 +37,24 @@ class _ServicesListState extends State<ServicesList> {
         title: Text('Search Service'),
         centerTitle: true,
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        itemCount: (listOfServices != null) ? listOfServices.length : 0,
-        itemBuilder: (BuildContext context, int index) {
-          print(index);
-          return RowWithCardWidget(
-            index: index,
-            servicePoint: listOfServices[index],
-            onViewItem: (context) => _onViewItem(
-              context,
-              listOfServices[index],
-              index,
-            ),
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: _getServiceList,
+        child: ListView.builder(
+          padding: EdgeInsets.symmetric(vertical: 8.0),
+          itemCount: (listOfServices != null) ? listOfServices.length : 0,
+          itemBuilder: (BuildContext context, int index) {
+            print(index);
+            return RowWithCardWidget(
+              index: index,
+              servicePoint: listOfServices[index],
+              onViewItem: (context) => _onViewItem(
+                context,
+                listOfServices[index],
+                index,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
