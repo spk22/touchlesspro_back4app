@@ -5,7 +5,7 @@ import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 import 'package:touchlesspro_back4app/ui/dropdown_item.dart';
 import 'package:touchlesspro_back4app/ui/row_with_card.dart';
-import 'package:touchlesspro_back4app/ui/servicepoint_item.dart';
+import 'package:touchlesspro_back4app/ui/service_users.dart';
 
 class Dashboard extends StatefulWidget {
   final String uid;
@@ -27,13 +27,6 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       listOfServicePoints = savedList;
     });
-    // print(listOfServicePoints.first.name);
-    // if (listOfServicePoints.isEmpty) {
-    //   listOfServicePoints = <ServicePoint>[
-    //     ServicePoint('abc123', '3R Infotech Pvt Ltd', ServiceType.office),
-    //     ServicePoint('xyz456', 'Brainshapers', ServiceType.library),
-    //   ];
-    // }
   }
 
   @override
@@ -75,19 +68,16 @@ class _DashboardState extends State<Dashboard> {
                       separatorBuilder: (context, index) => SizedBox(
                         height: 8.0,
                       ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 4.0,
-                        vertical: 8.0,
-                      ),
+                      padding: EdgeInsets.symmetric(vertical: 4.0),
                       itemBuilder: (BuildContext context, int index) {
                         print(index);
-                        print(listOfServicePoints[index].toString());
                         return RowWithCardWidget(
                           index: index,
                           servicePoint: listOfServicePoints[index],
                           onViewItem: (context) => _onViewItem(
                             context,
                             listOfServicePoints[index],
+                            index,
                           ),
                           onEditItem: (context) => _onEditItem(
                             context,
@@ -158,7 +148,7 @@ class _DashboardState extends State<Dashboard> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Add Service Point',
+            'Add Service',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 18.0, color: Colors.teal),
           ),
@@ -205,7 +195,10 @@ class _DashboardState extends State<Dashboard> {
                   print(
                       'uid: ${widget.uid} name: $serviceName serviceType: ${selectedItem.serviceType.toString()}');
                   servicePoint = ServicePoint(
-                      widget.uid, serviceName, selectedItem.serviceType);
+                    adminId: widget.uid,
+                    name: serviceName,
+                    serviceType: selectedItem.serviceType,
+                  );
                   await auth.createServicePoint(servicePoint);
                 }
                 Navigator.of(context).pop();
@@ -226,10 +219,18 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  void _onViewItem(BuildContext context, ServicePoint servicePoint) {
+  void _onViewItem(BuildContext context, ServicePoint servicePoint, int index) {
     // navigate to ServicePointItem page.
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => ServicePointItem(servicePoint: servicePoint),
+      builder: (context) => ServiceUsersPage(
+        servicePoint: servicePoint,
+        setImage: (value) {
+          servicePoint.hasImage = value;
+          setState(() {
+            listOfServicePoints[index] = servicePoint;
+          });
+        },
+      ),
     ));
   }
 
@@ -287,9 +288,9 @@ class _DashboardState extends State<Dashboard> {
                 ServicePoint newServicePoint;
                 if (serviceName != null) {
                   newServicePoint = ServicePoint(
-                    itemServicePoint.adminId,
-                    serviceName,
-                    itemServicePoint.serviceType,
+                    adminId: itemServicePoint.adminId,
+                    name: serviceName,
+                    serviceType: itemServicePoint.serviceType,
                   );
                   await auth.updateServiceName(
                       newServicePoint, itemServicePoint);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
+import 'package:touchlesspro_back4app/services/image_picker_service.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 
 import 'ui/admin_auth.dart';
@@ -53,6 +54,9 @@ class _StartupControllerState extends State<StartupController> {
               providers: [
                 Provider<ParseAuthService>(
                   create: (_) => ParseAuthService(),
+                ),
+                Provider<ImagePickerService>(
+                  create: (_) => ImagePickerService(),
                 ),
               ],
               child: GestureDetector(

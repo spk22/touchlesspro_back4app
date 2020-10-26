@@ -90,22 +90,4 @@ class RowWithCardWidget extends StatelessWidget {
       },
     );
   }
-
-  // Future<bool> _onEditItem(context) {}
-
-  // void _onDeleteItem() {
-  //   //TODO: Delete the servicePoint via dialog
-  //   print('delete item: ${index}');
-  // }
-
-  // void _onViewItem(BuildContext context) {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //         builder: (context) =>
-  //             ServicePointItem(servicePoint: widget.servicePoint)),
-  //   );
-  //   print('Tapped on Row ${index}');
-  //   // print('view item: $index');
-  // }
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 enum ServiceType { office, library, exam }
 
 class ServicePoint {
@@ -5,9 +7,14 @@ class ServicePoint {
   final String name;
   final ServiceType serviceType;
   List<String> userIds;
+  bool hasImage = false;
 
-  ServicePoint(this.adminId, this.name, this.serviceType);
+  ServicePoint(
+      {@required this.adminId,
+      @required this.name,
+      @required this.serviceType,
+      this.hasImage});
 
   ServicePoint.withUserIds(
-      this.adminId, this.name, this.serviceType, this.userIds);
+      this.adminId, this.name, this.serviceType, this.hasImage, this.userIds);
 }
