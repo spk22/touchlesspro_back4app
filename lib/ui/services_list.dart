@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
+import 'package:touchlesspro_back4app/ui/library_service.dart';
 import 'package:touchlesspro_back4app/ui/row_with_card.dart';
 
 class ServicesList extends StatefulWidget {
@@ -61,6 +62,12 @@ class _ServicesListState extends State<ServicesList> {
 
   _onViewItem(BuildContext context, ServicePoint servicePoint, int index) {
     print('pressed ${servicePoint.name}');
+    // go to library service page
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => LibraryService(servicePoint: servicePoint),
+      ),
+    );
   }
 
   Future<void> _getServiceList() async {
