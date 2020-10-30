@@ -83,7 +83,9 @@ class ParseAuthService {
     return response.success;
   }
 
-  Future<bool> setImage(
+  // sets the image of servicepoint having servicename = name and
+  // returns the imageUrl
+  Future<String> setImage(
       PickedFile selectedImage, String uid, String name) async {
     ParseFileBase parseFile = ParseFile(File(selectedImage.path));
     // get record from ServicePoints having adminId = uid & serviceName = name
@@ -91,75 +93,20 @@ class ParseAuthService {
     final QueryBuilder<ParseObject> queryBuilder =
         QueryBuilder<ParseObject>(serviceObject)..whereEqualTo('adminId', uid);
     final ParseResponse response = await queryBuilder.query();
-    bool imageSuccess = false;
+    String imageUrl;
     if (response.success && response.count > 0) {
       for (ParseObject record in response.results) {
         String serviceName = record.get<String>('serviceName');
         if (serviceName == name) {
           record.set('image', parseFile);
           final imageResponse = await record.save();
-          imageSuccess = imageResponse.success;
+          if (imageResponse.success) {
+            imageUrl = record.get<ParseFileBase>('image').url;
+          }
         }
       }
     }
-    return imageSuccess;
-  }
-
-  Future<ParseFileBase> getImage(String uid, String name) async {
-    // get record from ServicePoints having adminId = uid & serviceName = name
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)..whereEqualTo('adminId', uid);
-    final ParseResponse response = await queryBuilder.query();
-    Future<ParseFileBase> result;
-    if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == name) {
-          result = record.get<ParseFileBase>('image').download();
-        }
-      }
-    }
-
-    return result;
-  }
-
-  Future<String> getImageUrl(String uid, String name) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)..whereEqualTo('adminId', uid);
-    final ParseResponse response = await queryBuilder.query();
-    String url;
-    if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == name) {
-          url = record.get<ParseFileBase>('image').url;
-        }
-      }
-    }
-    return url;
-  }
-
-  Future<bool> hasImage(ServicePoint servicePoint) async {
-    //
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
-    bool hasImage = false;
-    if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == servicePoint.name) {
-          var result = record.get<ParseFileBase>('image');
-          print('hasImage: ' + (result != null).toString());
-          hasImage = (result != null);
-        }
-      }
-    }
-    return hasImage;
+    return imageUrl;
   }
 
   Future<void> createServicePoint(ServicePoint servicePoint) async {
@@ -230,8 +177,11 @@ class ParseAuthService {
         String serviceName = record.get<String>('serviceName');
         ServiceType serviceType =
             _labelToType[record.get<String>('serviceType')];
-        var result = record.get<ParseFileBase>('image');
-        bool hasImage = (result != null);
+        String imageUrl;
+        ParseFileBase parseFileBase = record.get<ParseFileBase>('image');
+        if (parseFileBase != null) {
+          imageUrl = parseFileBase.url;
+        }
         List<String> userIds = <String>[];
         String className = record.get<String>('serviceClass');
         var apiResponse = await ParseObject(className).getAll();
@@ -249,7 +199,7 @@ class ParseAuthService {
           uid,
           serviceName,
           serviceType,
-          hasImage,
+          imageUrl,
           userIds,
         ));
       }
@@ -269,8 +219,11 @@ class ParseAuthService {
       for (ParseObject record in response.results) {
         String serviceName = record.get<String>('serviceName');
         String uid = record.get<String>('adminId');
-        var result = record.get<ParseFileBase>('image');
-        bool hasImage = (result != null);
+        String imageUrl;
+        ParseFileBase parseFileBase = record.get<ParseFileBase>('image');
+        if (parseFileBase != null) {
+          imageUrl = parseFileBase.url;
+        }
         List<String> userIds = <String>[];
         String className = record.get<String>('serviceClass');
         var apiResponse = await ParseObject(className).getAll();
@@ -288,15 +241,13 @@ class ParseAuthService {
           uid,
           serviceName,
           serviceType,
-          hasImage,
+          imageUrl,
           userIds,
         ));
       }
     }
     return listOfServicePoints;
   }
-
-  Future<void> addUser() async {}
 
   static const Map<String, ServiceType> _labelToType = {
     'office': ServiceType.office,

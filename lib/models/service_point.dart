@@ -7,14 +7,14 @@ class ServicePoint {
   final String name;
   final ServiceType serviceType;
   List<String> userIds;
-  bool hasImage = false;
+  String imageUrl;
 
   ServicePoint(
       {@required this.adminId,
       @required this.name,
       @required this.serviceType,
-      this.hasImage});
+      this.imageUrl});
 
   ServicePoint.withUserIds(
-      this.adminId, this.name, this.serviceType, this.hasImage, this.userIds);
+      this.adminId, this.name, this.serviceType, this.imageUrl, this.userIds);
 }

@@ -220,12 +220,12 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onViewItem(BuildContext context, ServicePoint servicePoint, int index) {
-    // navigate to ServicePointItem page.
+    // navigate to ServiceUsers page.
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => ServiceUsersPage(
         servicePoint: servicePoint,
         setImage: (value) {
-          servicePoint.hasImage = value;
+          servicePoint.imageUrl = value;
           setState(() {
             listOfServicePoints[index] = servicePoint;
           });

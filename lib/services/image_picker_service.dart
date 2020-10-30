@@ -10,21 +10,16 @@ class ImagePickerService {
     return ImagePicker().getImage(source: source);
   }
 
-  Future<bool> uploadParseImage(
+  // returns url of image uploaded from gallery
+  Future<String> uploadParseImage(
       BuildContext context, String uid, String name) async {
     final selectedImage = await _pickImage(source: ImageSource.gallery);
     if (selectedImage != null) {
       final auth = Provider.of<ParseAuthService>(context, listen: false);
-      bool result = await auth.setImage(selectedImage, uid, name);
-      return result;
+      String url = await auth.setImage(selectedImage, uid, name);
+      return url;
     } else {
-      return false;
+      return null;
     }
   }
-
-  // Future<ParseFileBase> getParseImage(BuildContext context, String uid) async {
-  //   final auth = Provider.of<ParseAuthService>(context, listen: false);
-  //   ParseUser parseUser = await auth.getParseUser(uid);
-  //   return parseUser.get<ParseFileBase>("image").download();
-  // }
 }

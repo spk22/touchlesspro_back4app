@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/image_picker_service.dart';
-import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 
 class ServiceUsersPage extends StatefulWidget {
   final ServicePoint servicePoint;
-  final ValueChanged<bool> setImage;
+  final ValueChanged<String> setImage;
   ServiceUsersPage({Key key, this.servicePoint, this.setImage})
       : super(key: key);
 
@@ -15,12 +14,12 @@ class ServiceUsersPage extends StatefulWidget {
 }
 
 class _ServiceUsersPageState extends State<ServiceUsersPage> {
-  bool hasImage;
+  String imageUrl;
 
   @override
   void initState() {
     setState(() {
-      hasImage = widget.servicePoint.hasImage;
+      imageUrl = widget.servicePoint.imageUrl;
     });
     super.initState();
   }
@@ -59,22 +58,8 @@ class _ServiceUsersPageState extends State<ServiceUsersPage> {
   }
 
   Widget _buildImage(BuildContext context) {
-    final auth = Provider.of<ParseAuthService>(context, listen: false);
-    if (hasImage) {
-      return FutureBuilder<String>(
-        future: auth.getImageUrl(
-          widget.servicePoint.adminId,
-          widget.servicePoint.name,
-        ),
-        // initialData: InitialData,
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          if (snapshot.hasData) {
-            return Image.network(snapshot.data, fit: BoxFit.cover);
-          } else {
-            return CircularProgressIndicator();
-          }
-        },
-      );
+    if (imageUrl != null) {
+      return Image.network(imageUrl, fit: BoxFit.cover);
     } else {
       return Icon(
         Icons.camera_alt,
@@ -86,17 +71,17 @@ class _ServiceUsersPageState extends State<ServiceUsersPage> {
 
   Future<void> _chooseCoverPic(BuildContext context) async {
     final picker = Provider.of<ImagePickerService>(context, listen: false);
-    final isUploaded = await picker.uploadParseImage(
+    final url = await picker.uploadParseImage(
       context,
       widget.servicePoint.adminId,
       widget.servicePoint.name,
     );
     setState(() {
-      hasImage = isUploaded;
-      if (isUploaded) {
-        widget.setImage(hasImage);
+      imageUrl = url;
+      if (url != null) {
+        widget.setImage(imageUrl);
       }
     });
-    print('upload response: $isUploaded');
+    print('upload response: $url');
   }
 }

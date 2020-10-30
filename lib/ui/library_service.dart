@@ -42,11 +42,15 @@ class _LibraryServiceState extends State<LibraryService> {
               background: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  // Image.network(url) from backend
-                  Container(
-                    color: Colors.teal,
-                    child: Icon(Icons.camera_alt, size: 100.0),
+                  Image.network(
+                    widget.servicePoint.imageUrl,
+                    fit: BoxFit.cover,
                   ),
+                  // Icon(
+                  //   Icons.camera_alt,
+                  //   size: 100.0,
+                  //   color: Colors.teal,
+                  // ),
                 ],
               ),
             ),
