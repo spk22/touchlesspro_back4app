@@ -163,8 +163,23 @@ class ParseAuthService {
     }
   }
 
-  // returns username of the user added by admin
-  // Future<String> addUser(ServicePoint servicePoint, String password) async {}
+  Future<String> getServiceId(ServicePoint servicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    String id;
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == servicePoint.name) {
+          id = record.objectId;
+        }
+      }
+    }
+    return id;
+  }
 
   static Future<List<ServicePoint>> getServiceList(String uid) async {
     List<ServicePoint> listOfServicePoints = <ServicePoint>[];

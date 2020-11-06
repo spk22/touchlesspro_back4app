@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
@@ -14,7 +16,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isServerRunning = await ParseAuthService.initData();
   print(isServerRunning.toString());
+  String path = await localPath;
+  Hive.init(path);
   runApp(StartupController());
+}
+
+Future<String> get localPath async {
+  final directory = await getApplicationDocumentsDirectory();
+
+  return directory.path;
 }
 
 class StartupController extends StatefulWidget {
