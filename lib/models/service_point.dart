@@ -17,4 +17,21 @@ class ServicePoint {
 
   ServicePoint.withUserIds(
       this.adminId, this.name, this.serviceType, this.imageUrl, this.userIds);
+
+  int estimateCost(int slot, int duration) {
+    String key = slotToString[slot] + durationToString[duration];
+  }
 }
+
+Map<int, String> slotToString = {
+  6: 'six',
+  9: 'nine',
+  12: 'twelve',
+};
+
+Map<int, String> durationToString = {
+  1: 'one',
+  3: 'three',
+  6: 'six',
+  12: 'twelve',
+};

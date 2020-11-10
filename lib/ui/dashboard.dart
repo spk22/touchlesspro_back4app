@@ -5,7 +5,7 @@ import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/constants/routing_constants.dart';
 import 'package:touchlesspro_back4app/ui/dropdown_item.dart';
 import 'package:touchlesspro_back4app/ui/row_with_card.dart';
-import 'package:touchlesspro_back4app/ui/service_users.dart';
+import 'package:touchlesspro_back4app/ui/service_control.dart';
 
 class Dashboard extends StatefulWidget {
   final String uid;
@@ -220,9 +220,9 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onViewItem(BuildContext context, ServicePoint servicePoint, int index) {
-    // navigate to ServiceUsers page.
+    // navigate to Service Control Panel page.
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => ServiceUsersPage(
+      builder: (context) => ServiceControlPanel(
         servicePoint: servicePoint,
         setImage: (value) {
           servicePoint.imageUrl = value;

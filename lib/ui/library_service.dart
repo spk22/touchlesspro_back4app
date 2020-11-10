@@ -4,7 +4,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
-import 'package:touchlesspro_back4app/ui/library_user_details.dart';
+import 'package:touchlesspro_back4app/ui/library_user_form.dart';
 import 'package:touchlesspro_back4app/ui/otp_widget.dart';
 import 'package:flutter_otp/flutter_otp.dart';
 
@@ -194,7 +194,15 @@ class _LibraryServiceState extends State<LibraryService> {
 
       // navigate to user details
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => LibraryUserDetails()),
+        MaterialPageRoute(
+          builder: (context) => ChangeNotifierProvider<ValueNotifier<int>>(
+            create: (context) => ValueNotifier<int>(0),
+            child: LibraryUserForm(
+              servicePoint: widget.servicePoint,
+              authObject: _authObject,
+            ),
+          ),
+        ),
       );
     } else {
       print('Wrong OTP');

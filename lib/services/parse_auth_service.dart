@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/app_keys.dart';
+import 'package:touchlesspro_back4app/models/subscription.dart';
 
 @immutable
 class User {
@@ -262,6 +263,45 @@ class ParseAuthService {
       }
     }
     return listOfServicePoints;
+  }
+
+  Future<void> saveSubscriptionPlan(
+      ServicePoint servicePoint, String mapString) async {
+    //
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == servicePoint.name) {
+          record.set<String>('plan', mapString);
+          record.save();
+        }
+      }
+    }
+  }
+
+  Future<SubscriptionPlan> getSubscriptionPlan(
+      ServicePoint servicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    SubscriptionPlan plan;
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == servicePoint.name) {
+          String jsonString = record.get<String>('plan');
+          plan = planFromJson(jsonString);
+        }
+      }
+    }
+    return plan;
   }
 
   static const Map<String, ServiceType> _labelToType = {

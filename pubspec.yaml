@@ -29,6 +29,7 @@ dependencies:
   hive: ^1.4.4+1
   hive_flutter: ^0.3.1
   image_picker: ^0.6.7+12
+  intl: ^0.16.1
   intl_phone_field: ^1.4.2
   parse_server_sdk_flutter: ^2.0.0
   path_provider: ^1.6.24

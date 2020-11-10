@@ -5,8 +5,8 @@ import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/library_home.dart';
 import 'package:touchlesspro_back4app/ui/library_service.dart';
-import 'package:touchlesspro_back4app/ui/library_user_details.dart';
-import 'package:touchlesspro_back4app/ui/row_with_card.dart';
+import 'package:touchlesspro_back4app/ui/library_user_form.dart';
+import 'package:touchlesspro_back4app/ui/service_item_widget.dart';
 
 class ServicesList extends StatefulWidget {
   final ServiceType serviceType;
@@ -49,7 +49,7 @@ class _ServicesListState extends State<ServicesList> {
           itemCount: (listOfServices != null) ? listOfServices.length : 0,
           itemBuilder: (BuildContext context, int index) {
             print(index);
-            return RowWithCardWidget(
+            return ServiceItem(
               index: index,
               servicePoint: listOfServices[index],
               onViewItem: (context) => _onViewItem(
@@ -72,33 +72,45 @@ class _ServicesListState extends State<ServicesList> {
     bool boxPresent = await Hive.boxExists(boxName);
     if (boxPresent) {
       var box = await Hive.openBox(boxName);
-      // Obtain values into map
-      Map<String, String> boxMap = {
-        'number': box.get('number'),
-        'countryCode': box.get('countryCode'),
-        'countryISOCode': box.get('countryISOCode'),
-        'completeNumber': box.get('completeNumber'),
-        'detailsFilled': box.get('detailsFilled'),
-      };
-      String token = box.get('detailsFilled');
-      if (token == 'yes') {
-        // navigate to library home page
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => LibraryHome(
-              servicePoint: servicePoint,
-              authObject: boxMap,
+      if (box.get('number') != null) {
+        // Obtain values into map
+        Map<String, String> boxMap = {
+          'number': box.get('number'),
+          'countryCode': box.get('countryCode'),
+          'countryISOCode': box.get('countryISOCode'),
+          'completeNumber': box.get('completeNumber'),
+          'detailsFilled': box.get('detailsFilled'),
+        };
+        String token = box.get('detailsFilled');
+        if (token == 'yes') {
+          // navigate to library home page
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => LibraryHome(
+                servicePoint: servicePoint,
+                authObject: boxMap,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // navigate to library user details
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider<ValueNotifier<int>>(
+                create: (context) => ValueNotifier<int>(0),
+                child: LibraryUserForm(
+                  servicePoint: servicePoint,
+                  authObject: boxMap,
+                ),
+              ),
+            ),
+          );
+        }
       } else {
-        // navigate to library user details
+        // go to library service page for otp generation
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => LibraryUserDetails(
-              servicePoint: servicePoint,
-              authObject: boxMap,
-            ),
+            builder: (context) => LibraryService(servicePoint: servicePoint),
           ),
         );
       }
