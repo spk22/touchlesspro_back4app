@@ -61,20 +61,20 @@ class SubscriptionPlan {
   String twelvesix;
   String twelvetwelve;
 
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) =>
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> jsonMap) =>
       SubscriptionPlan(
-        sixone: json["sixone"],
-        sixthree: json["sixthree"],
-        sixsix: json["sixsix"],
-        sixtwelve: json["sixtwelve"],
-        nineone: json["nineone"],
-        ninethree: json["ninethree"],
-        ninesix: json["ninesix"],
-        ninetwelve: json["ninetwelve"],
-        twelveone: json["twelveone"],
-        twelvethree: json["twelvethree"],
-        twelvesix: json["twelvesix"],
-        twelvetwelve: json["twelvetwelve"],
+        sixone: jsonMap["sixone"],
+        sixthree: jsonMap["sixthree"],
+        sixsix: jsonMap["sixsix"],
+        sixtwelve: jsonMap["sixtwelve"],
+        nineone: jsonMap["nineone"],
+        ninethree: jsonMap["ninethree"],
+        ninesix: jsonMap["ninesix"],
+        ninetwelve: jsonMap["ninetwelve"],
+        twelveone: jsonMap["twelveone"],
+        twelvethree: jsonMap["twelvethree"],
+        twelvesix: jsonMap["twelvesix"],
+        twelvetwelve: jsonMap["twelvetwelve"],
       );
 
   Map<String, dynamic> toJson() => {

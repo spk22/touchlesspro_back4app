@@ -1,9 +1,13 @@
 import 'dart:convert';
 
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
+import 'package:touchlesspro_back4app/models/library_rules.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
+import 'package:touchlesspro_back4app/models/subscriber.dart';
+import 'package:touchlesspro_back4app/models/subscription.dart';
 import 'package:touchlesspro_back4app/services/image_picker_service.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 
@@ -19,325 +23,78 @@ class ServiceControlPanel extends StatefulWidget {
 
 class _ServiceControlPanelState extends State<ServiceControlPanel> {
   String imageUrl;
-  final GlobalKey<FormBuilderState> _fbKey = GlobalKey<FormBuilderState>();
+  final GlobalKey<FormBuilderState> _fbKey1 = GlobalKey<FormBuilderState>();
+  final GlobalKey<FormBuilderState> _fbKey2 = GlobalKey<FormBuilderState>();
+  int _selectedIndex = 0;
+  List<Subscriber> paidSubscribers;
+  List<Subscriber> unpaidSubscribers;
+
+  Future<void> _getSubscribers() async {
+    SubscriberGroup subscriberGroup =
+        await ParseAuthService.getSubscribers(widget.servicePoint);
+    setState(() {
+      paidSubscribers = subscriberGroup.paidSubscribers;
+      unpaidSubscribers = subscriberGroup.unpaidSubscribers;
+    });
+  }
 
   @override
   void initState() {
-    setState(() {
-      imageUrl = widget.servicePoint.imageUrl;
-    });
+    _getSubscribers();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: <Widget>[
-          SliverAppBar(
-            backgroundColor: Colors.teal,
-            stretch: true,
-            expandedHeight: 200.0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: GestureDetector(
-                onLongPress: () {},
-                onTap: () => _chooseCoverPic(context),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: <Widget>[_buildImage(context)],
-                ),
-              ),
-              title: Text(widget.servicePoint.name),
-              centerTitle: true,
-              stretchModes: <StretchMode>[
-                StretchMode.zoomBackground,
-                StretchMode.blurBackground,
-                StretchMode.fadeTitle,
-              ],
-            ),
-          ),
-          SliverList(
-            delegate: SliverChildListDelegate(
-              <Widget>[
-                SizedBox(height: 8.0),
-                Center(
-                  child: Text(
-                    'Subscription Plan:',
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                  ),
-                ),
-                SingleChildScrollView(
-                  child: FormBuilder(
-                    key: _fbKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: DataTable(
-                        columnSpacing: 8.0,
-                        dataRowHeight: 48.0,
-                        showBottomBorder: true,
-                        horizontalMargin: 8.0,
-                        columns: const <DataColumn>[
-                          DataColumn(
-                            label: Text(
-                              'Hours',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Monthly',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                            numeric: true,
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Quarterly',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                            numeric: true,
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Half-Yearly',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                            numeric: true,
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Annually',
-                              style: TextStyle(fontStyle: FontStyle.italic),
-                            ),
-                            numeric: true,
-                          ),
-                        ],
-                        rows: <DataRow>[
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(Text('6')),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'sixone',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'sixthree',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'sixsix',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'sixtwelve',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(Text('9')),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'nineone',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'ninethree',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'ninesix',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'ninetwelve',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                            ],
-                          ),
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(Text('12')),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'twelveone',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'twelvethree',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'twelvesix',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                              DataCell(
-                                FormBuilderTextField(
-                                  attribute: 'twelvetwelve',
-                                  maxLines: 1,
-                                  keyboardType: TextInputType.phone,
-                                  validators: [
-                                    FormBuilderValidators.required(),
-                                    FormBuilderValidators.numeric(),
-                                  ],
-                                ),
-                                showEditIcon: true,
-                                placeholder: true,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    MaterialButton(
-                      color: Colors.teal,
-                      onPressed: () async {
-                        final auth = Provider.of<ParseAuthService>(context,
-                            listen: false);
-                        if (_fbKey.currentState.saveAndValidate()) {
-                          print(_fbKey.currentState.value);
-                          // save map to servicepoint on backend
-                          final jsonString =
-                              json.encode(_fbKey.currentState.value);
-                          await auth.saveSubscriptionPlan(
-                              widget.servicePoint, jsonString);
-                        }
-                      },
-                      child: const Text(
-                        'Submit',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    MaterialButton(
-                      color: Colors.teal,
-                      onPressed: () {
-                        _fbKey.currentState.reset();
-                        // cost.value = 0;
-                      },
-                      child: const Text(
-                        'Reset',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+    if (widget.servicePoint.serviceType == ServiceType.library)
+      return _buildLibrary(context);
+    else
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.teal,
+          title: Text('${widget.servicePoint.name}'),
+          centerTitle: true,
+        ),
+      );
+  }
+
+  Widget _viewSwitcher() {
+    Widget widget;
+    switch (_selectedIndex) {
+      case 0:
+        widget = _settingsView();
+        break;
+      case 1:
+        widget = _usersView();
+        break;
+      case 2:
+        widget = _settingsView();
+        break;
+      default:
+        widget = _settingsView();
+    }
+    return widget;
+  }
+
+  Widget _buildLibrary(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        body: _viewSwitcher(),
+        appBar: (_selectedIndex == 1)
+            ? AppBar(
+                backgroundColor: Colors.teal,
+                bottom: _tabBar(),
+              )
+            : null,
+        bottomNavigationBar: _bottomNavigationBar(),
       ),
     );
   }
 
   Widget _buildImage(BuildContext context) {
-    if (imageUrl != null) {
-      return Image.network(imageUrl, fit: BoxFit.cover);
+    if (widget.servicePoint.imageUrl != null) {
+      return Image.network(widget.servicePoint.imageUrl, fit: BoxFit.cover);
     } else {
       return Icon(
         Icons.camera_alt,
@@ -361,5 +118,584 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
       }
     });
     print('upload response: $url');
+  }
+
+  Widget _tableWithInitialValue(Map<String, dynamic> savedMap) {
+    return FormBuilder(
+      key: _fbKey1,
+      initialValue: savedMap,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: DataTable(
+          columnSpacing: 8.0,
+          dataRowHeight: 48.0,
+          showBottomBorder: true,
+          horizontalMargin: 8.0,
+          columns: const <DataColumn>[
+            DataColumn(
+              label: Text(
+                'Hours',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Monthly',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+              numeric: true,
+            ),
+            DataColumn(
+              label: Text(
+                'Quarterly',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+              numeric: true,
+            ),
+            DataColumn(
+              label: Text(
+                'Half-Yearly',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+              numeric: true,
+            ),
+            DataColumn(
+              label: Text(
+                'Annually',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+              numeric: true,
+            ),
+          ],
+          rows: <DataRow>[
+            DataRow(
+              cells: <DataCell>[
+                DataCell(Text('6')),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'sixone',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'sixthree',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'sixsix',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'sixtwelve',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+              ],
+            ),
+            DataRow(
+              cells: <DataCell>[
+                DataCell(Text('9')),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'nineone',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'ninethree',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'ninesix',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'ninetwelve',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+              ],
+            ),
+            DataRow(
+              cells: <DataCell>[
+                DataCell(Text('12')),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'twelveone',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'twelvethree',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'twelvesix',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+                DataCell(
+                  FormBuilderTextField(
+                    attribute: 'twelvetwelve',
+                    maxLines: 1,
+                    keyboardType: TextInputType.phone,
+                    validators: [
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.numeric(),
+                    ],
+                  ),
+                  showEditIcon: true,
+                  placeholder: true,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _rulesWithInitialValue(Map<String, dynamic> savedMap) {
+    return FormBuilder(
+      key: _fbKey2,
+      initialValue: savedMap,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: <Widget>[
+            FormBuilderTextField(
+              attribute: 'rules',
+              maxLines: null,
+              maxLength: null,
+              minLines: 4,
+              keyboardType: TextInputType.multiline,
+              validators: [FormBuilderValidators.required()],
+              decoration: InputDecoration(
+                hintText: 'Write Rules here',
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                MaterialButton(
+                  color: Colors.teal,
+                  onPressed: () async {
+                    final auth =
+                        Provider.of<ParseAuthService>(context, listen: false);
+                    if (_fbKey2.currentState.saveAndValidate()) {
+                      print(_fbKey2.currentState.value);
+                      // save map to servicepoint on backend
+                      final jsonString =
+                          json.encode(_fbKey2.currentState.value);
+                      await auth.saveLibraryRules(
+                          widget.servicePoint, jsonString);
+                    }
+                  },
+                  child: const Text(
+                    'Submit',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                MaterialButton(
+                  color: Colors.teal,
+                  onPressed: () {
+                    _fbKey2.currentState.reset();
+                  },
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _settingsView() {
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: <Widget>[
+        SliverAppBar(
+          backgroundColor: Colors.teal,
+          stretch: true,
+          expandedHeight: 200.0,
+          flexibleSpace: FlexibleSpaceBar(
+            background: GestureDetector(
+              onLongPress: () {},
+              onTap: () => _chooseCoverPic(context),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[_buildImage(context)],
+              ),
+            ),
+            title: Text(widget.servicePoint.name),
+            centerTitle: true,
+            stretchModes: <StretchMode>[
+              StretchMode.zoomBackground,
+              StretchMode.blurBackground,
+              StretchMode.fadeTitle,
+            ],
+          ),
+        ),
+        SliverList(
+          delegate: SliverChildListDelegate(
+            <Widget>[
+              SizedBox(height: 8.0),
+              Center(
+                child: Text(
+                  'Subscription Plan:',
+                  style: TextStyle(fontSize: 20, color: Colors.black),
+                ),
+              ),
+              SingleChildScrollView(
+                child: Column(
+                  children: <Widget>[
+                    FutureBuilder<SubscriptionPlan>(
+                      future: ParseAuthService.getSubscriptionPlan(
+                          widget.servicePoint),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<SubscriptionPlan> snapshot) {
+                        Map<String, dynamic> _savedMap;
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else {
+                          if (snapshot.hasData) {
+                            _savedMap = snapshot.data.toJson();
+                            return _tableWithInitialValue(_savedMap);
+                          } else {
+                            // initialize _savedMap with zeros
+                            _savedMap = {
+                              "sixone": '0',
+                              "sixthree": '0',
+                              "sixsix": '0',
+                              "sixtwelve": '0',
+                              "nineone": '0',
+                              "ninethree": '0',
+                              "ninesix": '0',
+                              "ninetwelve": '0',
+                              "twelveone": '0',
+                              "twelvethree": '0',
+                              "twelvesix": '0',
+                              "twelvetwelve": '0',
+                            };
+                            return _tableWithInitialValue(_savedMap);
+                          }
+                        }
+                      },
+                    ),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () async {
+                            final auth = Provider.of<ParseAuthService>(context,
+                                listen: false);
+                            if (_fbKey1.currentState.saveAndValidate()) {
+                              print(_fbKey1.currentState.value);
+                              // save map to servicepoint on backend
+                              final jsonString =
+                                  json.encode(_fbKey1.currentState.value);
+                              await auth.saveSubscriptionPlan(
+                                  widget.servicePoint, jsonString);
+                            }
+                          },
+                          child: const Text(
+                            'Submit',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () {
+                            _fbKey1.currentState.reset();
+                          },
+                          child: const Text(
+                            'Reset',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.0),
+                    Center(
+                      child: Text(
+                        'Library Rules:',
+                        style: TextStyle(fontSize: 20, color: Colors.black),
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    FutureBuilder<LibraryRules>(
+                      future:
+                          ParseAuthService.getLibraryRules(widget.servicePoint),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<LibraryRules> snapshot) {
+                        Map<String, dynamic> _savedMap;
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else {
+                          if (snapshot.hasData) {
+                            _savedMap = snapshot.data.toJson();
+                            return _rulesWithInitialValue(_savedMap);
+                          } else {
+                            _savedMap = {'rules': ''};
+                            return _rulesWithInitialValue(_savedMap);
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _usersView() {
+    return TabBarView(
+      children: <Widget>[
+        _paidView(),
+        _unpaidView(),
+      ],
+    );
+  }
+
+  Widget _unpaidView() {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      itemCount: unpaidSubscribers.length,
+      itemBuilder: (context, index) {
+        final subscriber = unpaidSubscribers[index];
+        return Dismissible(
+          key: UniqueKey(),
+          onDismissed: (direction) async {
+            setState(() {
+              unpaidSubscribers.removeAt(index);
+            });
+            await ParseAuthService.removeSubscriber(
+                widget.servicePoint, subscriber.uid);
+            Scaffold.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    "User ${subscriber.name} with phone: ${subscriber.phone.number} removed!"),
+              ),
+            );
+          },
+          background: Container(color: Colors.red),
+          child: Card(
+            child: ListTile(
+              title: Text('${subscriber.name}'),
+              onTap: () {},
+            ),
+            elevation: 2.0,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _paidView() {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      itemCount: paidSubscribers.length,
+      itemBuilder: (context, index) {
+        final subscriber = paidSubscribers[index];
+        return Dismissible(
+          key: UniqueKey(),
+          onDismissed: (direction) async {
+            setState(() {
+              paidSubscribers.removeAt(index);
+            });
+            await ParseAuthService.removeSubscriber(
+                widget.servicePoint, subscriber.uid);
+            Scaffold.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    "User ${subscriber.name} with phone: ${subscriber.phone.number} removed!"),
+              ),
+            );
+          },
+          background: Container(color: Colors.red),
+          child: Card(
+            child: ListTile(
+              title: Text('${subscriber.name}'),
+              onTap: () {},
+            ),
+            elevation: 2.0,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tabBar() {
+    return TabBar(
+      tabs: <Tab>[
+        Tab(
+          icon: Text(
+            'PAID',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Tab(
+          icon: (unpaidSubscribers.length > 0)
+              ? Badge(
+                  shape: BadgeShape.circle,
+                  padding: EdgeInsets.all(4),
+                  position: BadgePosition.topEnd(top: -10, end: -16),
+                  badgeContent: Text(
+                    '${unpaidSubscribers.length}',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  child: Text(
+                    'UNPAID',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                )
+              : Text(
+                  'UNPAID',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bottomNavigationBar() {
+    return BottomNavigationBar(
+      items: <BottomNavigationBarItem>[
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          label: 'Settings',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.group),
+          label: 'Users',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.insert_chart_outlined),
+          label: 'Stats',
+        ),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: Colors.teal[800],
+      onTap: _onOptionTapped,
+    );
+  }
+
+  void _onOptionTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 }

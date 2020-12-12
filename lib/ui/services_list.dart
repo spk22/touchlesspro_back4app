@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
+import 'package:touchlesspro_back4app/models/user_state.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
+import 'package:touchlesspro_back4app/ui/library_entrance.dart';
 import 'package:touchlesspro_back4app/ui/library_home.dart';
 import 'package:touchlesspro_back4app/ui/library_service.dart';
 import 'package:touchlesspro_back4app/ui/library_user_form.dart';
@@ -69,59 +70,77 @@ class _ServicesListState extends State<ServicesList> {
     print('pressed ${servicePoint.name}');
     final auth = Provider.of<ParseAuthService>(context, listen: false);
     String boxName = await auth.getServiceId(servicePoint);
-    bool boxPresent = await Hive.boxExists(boxName);
-    if (boxPresent) {
-      var box = await Hive.openBox(boxName);
-      if (box.get('number') != null) {
-        // Obtain values into map
-        Map<String, String> boxMap = {
-          'number': box.get('number'),
-          'countryCode': box.get('countryCode'),
-          'countryISOCode': box.get('countryISOCode'),
-          'completeNumber': box.get('completeNumber'),
-          'detailsFilled': box.get('detailsFilled'),
-        };
-        String token = box.get('detailsFilled');
-        if (token == 'yes') {
-          // navigate to library home page
+    //
+    StateSelector selector =
+        StateSelector(boxName: boxName, servicePoint: servicePoint);
+    UserState state = await selector.getState();
+    switch (state) {
+      case UserState.Unregistered:
+        {
+          // go to library service page for otp generation
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => LibraryHome(
-                servicePoint: servicePoint,
-                authObject: boxMap,
-              ),
+              builder: (context) => LibraryService(servicePoint: servicePoint),
             ),
           );
-        } else {
-          // navigate to library user details
+        }
+        break;
+      case UserState.OTPVerified:
+        {
+          // navigate to library Form page
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => ChangeNotifierProvider<ValueNotifier<int>>(
                 create: (context) => ValueNotifier<int>(0),
                 child: LibraryUserForm(
                   servicePoint: servicePoint,
-                  authObject: boxMap,
+                  authObject: selector.boxMap,
                 ),
               ),
             ),
           );
         }
-      } else {
-        // go to library service page for otp generation
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => LibraryService(servicePoint: servicePoint),
-          ),
-        );
-      }
-    } else {
-      // go to library service page for otp generation
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => LibraryService(servicePoint: servicePoint),
-        ),
-      );
+        break;
+      case UserState.FormFilled:
+        {
+          // state waiting for approval from admin
+          // go to library entrance page and enter otp given by admin
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => LibraryEntrance(
+                servicePoint: servicePoint,
+                authObject: selector.boxMap,
+                subscriber: selector.subscriber,
+              ),
+            ),
+          );
+        }
+        break;
+      case UserState.AdminApproved:
+        {
+          // navigate to library home page
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => LibraryHome(
+                servicePoint: servicePoint,
+                authObject: selector.boxMap,
+                subscriber: selector.subscriber,
+              ),
+            ),
+          );
+        }
+        break;
+      default:
+        {
+          // go to library service page for otp generation
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => LibraryService(servicePoint: servicePoint),
+            ),
+          );
+        }
     }
+    //
   }
 
   Future<void> _getServiceList() async {

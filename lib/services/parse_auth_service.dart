@@ -4,9 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:touchlesspro_back4app/models/library_rules.dart';
+import 'package:touchlesspro_back4app/models/phone_details.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/app_keys.dart';
 import 'package:touchlesspro_back4app/models/subscription.dart';
+import 'package:touchlesspro_back4app/models/subscriber.dart';
 
 @immutable
 class User {
@@ -70,6 +73,19 @@ class ParseAuthService {
     }
   }
 
+  Future<User> signUpUser(String userName, String password) async {
+    final user = ParseUser(userName, password, null);
+    final response = await user.signUp(allowWithoutEmail: true);
+    if (response.success) {
+      user.set<bool>('isAdmin', false);
+      final apiResponse = await user.save();
+      print('userSaved: ' + apiResponse.success.toString());
+      return _userFromParse(user);
+    } else {
+      return null;
+    }
+  }
+
   // Get ParseUser from objectId aka uid
   Future<ParseUser> _parseUserFromUid(String uid) async {
     final response = await ParseUser.forQuery().getObject(uid);
@@ -92,18 +108,17 @@ class ParseAuthService {
     // get record from ServicePoints having adminId = uid & serviceName = name
     final ParseObject serviceObject = ParseObject('ServicePoints');
     final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)..whereEqualTo('adminId', uid);
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', uid)
+          ..whereEqualTo('serviceName', name);
     final ParseResponse response = await queryBuilder.query();
     String imageUrl;
     if (response.success && response.count > 0) {
       for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == name) {
-          record.set('image', parseFile);
-          final imageResponse = await record.save();
-          if (imageResponse.success) {
-            imageUrl = record.get<ParseFileBase>('image').url;
-          }
+        record.set('image', parseFile);
+        final imageResponse = await record.save();
+        if (imageResponse.success) {
+          imageUrl = record.get<ParseFileBase>('image').url;
         }
       }
     }
@@ -201,7 +216,7 @@ class ParseAuthService {
         List<String> userIds = <String>[];
         String className = record.get<String>('serviceClass');
         var apiResponse = await ParseObject(className).getAll();
-        if (apiResponse.success && response.count > 0) {
+        if (apiResponse.success && apiResponse.count > 0) {
           if (apiResponse.results != null) {
             for (ParseObject testObject in apiResponse.results) {
               String userId = testObject.get<String>('userId');
@@ -284,7 +299,7 @@ class ParseAuthService {
     }
   }
 
-  Future<SubscriptionPlan> getSubscriptionPlan(
+  static Future<SubscriptionPlan> getSubscriptionPlan(
       ServicePoint servicePoint) async {
     final ParseObject serviceObject = ParseObject('ServicePoints');
     final QueryBuilder<ParseObject> queryBuilder =
@@ -297,11 +312,236 @@ class ParseAuthService {
         String serviceName = record.get<String>('serviceName');
         if (serviceName == servicePoint.name) {
           String jsonString = record.get<String>('plan');
-          plan = planFromJson(jsonString);
+          plan = (jsonString != null) ? planFromJson(jsonString) : null;
         }
       }
     }
     return plan;
+  }
+
+  Future<void> saveLibraryRules(
+      ServicePoint servicePoint, String mapString) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String serviceName = record.get<String>('serviceName');
+        if (serviceName == servicePoint.name) {
+          record.set<String>('rules', mapString);
+          record.save();
+        }
+      }
+    }
+  }
+
+  static Future<LibraryRules> getLibraryRules(ServicePoint servicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId);
+    final ParseResponse response = await queryBuilder.query();
+    String jsonString;
+    if (response.success && response.count > 0) {
+      for (ParseObject record in response.results) {
+        String rules = record.get<String>('rules');
+        if (rules != null) jsonString = rules;
+      }
+    }
+    return rulesFromJson(jsonString);
+  }
+
+  static Future<Status> statusFromBackend(
+      ServicePoint servicePoint, String number) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    Status status = Status(false, false);
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final ParseObject classObject = ParseObject(serviceClassName);
+      final QueryBuilder<ParseObject> phoneQueryBuilder =
+          QueryBuilder<ParseObject>(classObject)
+            ..whereEqualTo('number', number);
+      final ParseResponse phoneResponse = await phoneQueryBuilder.query();
+      if (phoneResponse.success && phoneResponse.count > 0) {
+        ParseObject record = phoneResponse.results[0];
+        status.isSubscribed = true;
+        status.isApproved = record.get<bool>('paid');
+        Map<String, String> phoneMap = {
+          'number': record.get<String>('number'),
+          'countryCode': record.get<String>('countryCode'),
+        };
+        PhoneDetails phone = PhoneDetails.fromJson(phoneMap);
+        Subscriber subscriber = Subscriber.withUid(
+          uid: record.objectId,
+          name: record.get<String>('name'),
+          preparingFor: record.get<String>('prep'),
+          slot: record.get<int>('slot'),
+          planMonths: record.get<int>('months'),
+          planFee: record.get<int>('fee'),
+          phone: phone,
+          otp: record.get<int>('otp'),
+        );
+        status.subscriber = subscriber;
+      }
+    }
+    return status;
+  }
+
+  static Future<bool> isSubscribed(
+      String serviceClassName, String number) async {
+    bool isSubscribed = false;
+    final ParseObject classObject = ParseObject(serviceClassName);
+    final QueryBuilder<ParseObject> phoneQueryBuilder =
+        QueryBuilder<ParseObject>(classObject)..whereEqualTo('number', number);
+    final ParseResponse phoneResponse = await phoneQueryBuilder.query();
+    if (phoneResponse.success && phoneResponse.count > 0) {
+      ParseObject record = phoneResponse.results[0];
+      String phone = record.get<String>('number');
+      if (phone == number) isSubscribed = true;
+    }
+    return isSubscribed;
+  }
+
+  Future<bool> addSubscriber(
+      ServicePoint servicePoint, Subscriber subscriber) async {
+    // int otp = 1000 + Random().nextInt(9999 - 1000);
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      bool subscriptionStatus =
+          await isSubscribed(serviceClassName, subscriber.phone.number);
+      if (subscriptionStatus) return false;
+      final objectResponse = await ParseObject(serviceClassName).create();
+      final ParseObject record = objectResponse.results[0];
+      record.set<String>('name', subscriber.name);
+      record.set<String>('prep', subscriber.preparingFor);
+      record.set<int>('slot', subscriber.slot);
+      record.set<int>('months', subscriber.planMonths);
+      record.set<int>('fee', subscriber.planFee);
+      record.set<bool>('paid', false);
+      record.set<int>('otp', subscriber.otp);
+      record.set<String>('countryCode', subscriber.phone.countryCode);
+      record.set<String>('number', subscriber.phone.number);
+      record.save();
+    }
+    return true;
+  }
+
+  static Future<SubscriberGroup> getSubscribers(
+      ServicePoint servicePoint) async {
+    List<Subscriber> paidList = [];
+    List<Subscriber> unpaidList = [];
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final ParseObject serviceObject = ParseObject(serviceClassName);
+      var apiResponse = await serviceObject.getAll();
+      if (apiResponse.success && apiResponse.count > 0) {
+        if (apiResponse.results != null) {
+          for (ParseObject record in apiResponse.results) {
+            String uId = record.objectId;
+            if (uId != null) {
+              PhoneDetails phone = PhoneDetails.fromJson({
+                'number': record.get<String>('number'),
+                'countryCode': record.get<String>('countryCode'),
+              });
+              final subscriber = Subscriber.withUid(
+                uid: record.objectId,
+                name: record.get<String>('name'),
+                preparingFor: record.get<String>('prep'),
+                slot: record.get<int>('slot'),
+                planMonths: record.get<int>('months'),
+                planFee: record.get<int>('fee'),
+                phone: phone,
+                otp: record.get<int>('otp'),
+              );
+              (record.get<bool>('paid'))
+                  ? paidList.add(subscriber)
+                  : unpaidList.add(subscriber);
+            }
+          }
+        }
+      }
+    }
+    SubscriberGroup subscriberGroup = SubscriberGroup(
+      paidSubscribers: paidList,
+      unpaidSubscribers: unpaidList,
+    );
+    return subscriberGroup;
+  }
+
+  Future<void> approveSubscriber(
+      ServicePoint servicePoint, Subscriber subscriber) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final ParseObject classObject = ParseObject(serviceClassName);
+      final QueryBuilder<ParseObject> phoneQueryBuilder =
+          QueryBuilder<ParseObject>(classObject)
+            ..whereEqualTo('number', subscriber.phone.number);
+      final ParseResponse phoneResponse = await phoneQueryBuilder.query();
+      if (phoneResponse.success && phoneResponse.count > 0) {
+        ParseObject record = phoneResponse.results[0];
+        record.set<bool>('paid', true);
+        record.save();
+        // set subscriber as record in User table
+        await signUpUser(record.objectId, subscriber.otp.toString());
+      }
+    }
+  }
+
+  static Future<void> removeSubscriber(
+      ServicePoint servicePoint, String uid) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final apiResponse = await ParseObject(serviceClassName).getObject(uid);
+      if (apiResponse.success && apiResponse.count > 0) {
+        final ParseObject record = apiResponse.results[0];
+        await record.delete();
+      }
+    }
+    // remove user where username = uid
+    final ParseObject parseObject = ParseObject('User');
+    final QueryBuilder<ParseObject> userQueryBuilder =
+        QueryBuilder<ParseObject>(parseObject)..whereEqualTo('username', uid);
+    final ParseResponse userResponse = await userQueryBuilder.query();
+    if (userResponse.success && userResponse.count > 0) {
+      ParseObject record = userResponse.results[0];
+      await record.delete();
+    }
   }
 
   static const Map<String, ServiceType> _labelToType = {
