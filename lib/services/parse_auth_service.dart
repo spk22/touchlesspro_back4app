@@ -219,7 +219,7 @@ class ParseAuthService {
         if (apiResponse.success && apiResponse.count > 0) {
           if (apiResponse.results != null) {
             for (ParseObject testObject in apiResponse.results) {
-              String userId = testObject.get<String>('userId');
+              String userId = testObject.objectId;
               if (userId != null) {
                 userIds.add(userId);
               }
@@ -261,7 +261,7 @@ class ParseAuthService {
         if (apiResponse.success && response.count > 0) {
           if (apiResponse.results != null) {
             for (ParseObject testObject in apiResponse.results) {
-              String userId = testObject.get<String>('userId');
+              String userId = testObject.objectId;
               if (userId != null) {
                 userIds.add(userId);
               }
@@ -388,7 +388,11 @@ class ParseAuthService {
           planFee: record.get<int>('fee'),
           phone: phone,
           otp: record.get<int>('otp'),
+          approvedAt: record.get<DateTime>('approvedAt'),
         );
+        subscriber.extension = (record.containsKey('extendedBy'))
+            ? record.get<int>('extendedBy')
+            : 0;
         status.subscriber = subscriber;
       }
     }
@@ -474,7 +478,10 @@ class ParseAuthService {
                 planFee: record.get<int>('fee'),
                 phone: phone,
                 otp: record.get<int>('otp'),
+                approvedAt: record.get<DateTime>('approvedAt'),
               );
+              if (record.containsKey('extendedBy'))
+                subscriber.extension = record.get<int>('extendedBy');
               (record.get<bool>('paid'))
                   ? paidList.add(subscriber)
                   : unpaidList.add(subscriber);
@@ -509,6 +516,8 @@ class ParseAuthService {
       if (phoneResponse.success && phoneResponse.count > 0) {
         ParseObject record = phoneResponse.results[0];
         record.set<bool>('paid', true);
+        record.set<DateTime>('approvedAt', subscriber.approvedAt);
+        record.set<int>('extendedBy', subscriber.extension);
         record.save();
         // set subscriber as record in User table
         await signUpUser(record.objectId, subscriber.otp.toString());
@@ -541,6 +550,32 @@ class ParseAuthService {
     if (userResponse.success && userResponse.count > 0) {
       ParseObject record = userResponse.results[0];
       await record.delete();
+    }
+  }
+
+  Future<void> incrementDaysBy(
+      int increment, ServicePoint servicePoint, Subscriber subscriber) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final ParseObject classObject = ParseObject(serviceClassName);
+      final QueryBuilder<ParseObject> phoneQueryBuilder =
+          QueryBuilder<ParseObject>(classObject)
+            ..whereEqualTo('number', subscriber.phone.number);
+      final ParseResponse phoneResponse = await phoneQueryBuilder.query();
+      if (phoneResponse.success && phoneResponse.count > 0) {
+        ParseObject record = phoneResponse.results[0];
+        if (record.containsKey('extendedBy')) {
+          record.setIncrement('extendedBy', increment);
+          await record.save();
+        }
+      }
     }
   }
 

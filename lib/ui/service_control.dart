@@ -10,6 +10,7 @@ import 'package:touchlesspro_back4app/models/subscriber.dart';
 import 'package:touchlesspro_back4app/models/subscription.dart';
 import 'package:touchlesspro_back4app/services/image_picker_service.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
+import 'package:touchlesspro_back4app/ui/subscriber_info.dart';
 
 class ServiceControlPanel extends StatefulWidget {
   final ServicePoint servicePoint;
@@ -562,13 +563,13 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
   Widget _usersView() {
     return TabBarView(
       children: <Widget>[
-        _paidView(),
-        _unpaidView(),
+        _paidView(PaymentStatus.Paid),
+        _unpaidView(PaymentStatus.Unpaid),
       ],
     );
   }
 
-  Widget _unpaidView() {
+  Widget _unpaidView(PaymentStatus paymentStatus) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 8.0),
       itemCount: unpaidSubscribers.length,
@@ -593,7 +594,28 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
           child: Card(
             child: ListTile(
               title: Text('${subscriber.name}'),
-              onTap: () {},
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => SubscriberInfo(
+                    subscriber: subscriber,
+                    paymentStatus: paymentStatus,
+                    servicePoint: widget.servicePoint,
+                    delegateListUpdate: (_) {
+                      setState(() {
+                        _getSubscribers();
+                      });
+                    },
+                  ),
+                  fullscreenDialog: true,
+                ));
+                // final auth =
+                //     Provider.of<ParseAuthService>(context, listen: false);
+                // await auth.approveSubscriber(widget.servicePoint, subscriber);
+                // setState(() {
+                //   unpaidSubscribers.removeAt(index);
+                //   _getSubscribers();
+                // });
+              },
             ),
             elevation: 2.0,
           ),
@@ -602,7 +624,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
     );
   }
 
-  Widget _paidView() {
+  Widget _paidView(PaymentStatus paymentStatus) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(vertical: 8.0),
       itemCount: paidSubscribers.length,
@@ -627,7 +649,21 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
           child: Card(
             child: ListTile(
               title: Text('${subscriber.name}'),
-              onTap: () {},
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => SubscriberInfo(
+                    subscriber: subscriber,
+                    paymentStatus: paymentStatus,
+                    servicePoint: widget.servicePoint,
+                    delegateListUpdate: (_) {
+                      setState(() {
+                        _getSubscribers();
+                      });
+                    },
+                  ),
+                  fullscreenDialog: true,
+                ));
+              },
             ),
             elevation: 2.0,
           ),

@@ -36,7 +36,7 @@ class Checkout extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -50,7 +50,7 @@ class Checkout extends StatelessWidget {
                       fontSize: 24.0,
                     ),
                   ),
-                  SizedBox(width: 8.0),
+                  SizedBox(width: 4.0),
                   Expanded(
                     child: Material(
                       elevation: 3.0,

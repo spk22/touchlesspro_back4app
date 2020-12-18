@@ -36,6 +36,8 @@ dependencies:
   path_provider: ^1.6.24
   provider: ^4.3.2+2
   shared_preferences: ^0.5.8
+  flutter_countdown_timer: ^1.6.0
+  flutter_touch_spin: ^1.0.1
 
 dev_dependencies:
   flutter_test:

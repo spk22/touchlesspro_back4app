@@ -69,6 +69,10 @@ class _LibraryEntranceState extends State<LibraryEntrance> {
 
   void _verifyOTP(BuildContext context) async {
     if (int.parse(inputOtp) == widget.subscriber.otp) {
+      // set approvedAt time to subscriber
+      widget.subscriber.approvedAt = DateTime.now();
+      // set initial extension of days = 0
+      widget.subscriber.extension = 0;
       // approve subscriber
       final auth = Provider.of<ParseAuthService>(context, listen: false);
       await auth.approveSubscriber(widget.servicePoint, widget.subscriber);

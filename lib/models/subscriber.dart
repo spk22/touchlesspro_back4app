@@ -9,6 +9,8 @@ class Subscriber {
   int planFee;
   PhoneDetails phone;
   int otp;
+  DateTime approvedAt;
+  int extension;
   Subscriber(
       {this.name,
       this.preparingFor,
@@ -24,7 +26,8 @@ class Subscriber {
       this.planMonths,
       this.planFee,
       this.phone,
-      this.otp});
+      this.otp,
+      this.approvedAt});
 }
 
 class SubscriberGroup {
@@ -39,3 +42,5 @@ class Status {
   bool isApproved;
   Status(this.isSubscribed, this.isApproved);
 }
+
+enum PaymentStatus { Paid, Unpaid }
