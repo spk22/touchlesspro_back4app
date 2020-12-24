@@ -1,16 +1,21 @@
 import 'dart:convert';
 
 import 'package:badges/badges.dart';
+import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/library_rules.dart';
+import 'package:touchlesspro_back4app/models/library_timings.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
 import 'package:touchlesspro_back4app/models/subscription.dart';
 import 'package:touchlesspro_back4app/services/image_picker_service.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
+import 'package:touchlesspro_back4app/ui/regenerative_qrimage.dart';
 import 'package:touchlesspro_back4app/ui/subscriber_info.dart';
+import 'package:touchlesspro_back4app/ui/custom_switch.dart';
 
 class ServiceControlPanel extends StatefulWidget {
   final ServicePoint servicePoint;
@@ -26,9 +31,52 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
   String imageUrl;
   final GlobalKey<FormBuilderState> _fbKey1 = GlobalKey<FormBuilderState>();
   final GlobalKey<FormBuilderState> _fbKey2 = GlobalKey<FormBuilderState>();
+  final GlobalKey<FormBuilderState> _fbKey3 = GlobalKey<FormBuilderState>();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   List<Subscriber> paidSubscribers;
   List<Subscriber> unpaidSubscribers;
+  TimeOfDay selectedTime24Hour;
+  Map<String, TimeOfDay> pickedTimesMap = {};
+  Map<String, dynamic> savedMap;
+  final _format = DateFormat("HH:mm");
+  Map<String, dynamic> defaultMap = {
+    "sunday": {
+      "clopen": "closed",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "monday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "tuesday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "wednesday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "thursday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "friday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    },
+    "saturday": {
+      "clopen": "open",
+      "opening": {"hr": 8, "min": 30},
+      "closing": {"hr": 20, "min": 30}
+    }
+  };
 
   Future<void> _getSubscribers() async {
     SubscriberGroup subscriberGroup =
@@ -51,6 +99,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
       return _buildLibrary(context);
     else
       return Scaffold(
+        key: _scaffoldKey,
         appBar: AppBar(
           backgroundColor: Colors.teal,
           title: Text('${widget.servicePoint.name}'),
@@ -66,10 +115,10 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
         widget = _settingsView();
         break;
       case 1:
-        widget = _usersView();
+        widget = _qrCodeView();
         break;
       case 2:
-        widget = _settingsView();
+        widget = _usersView();
         break;
       default:
         widget = _settingsView();
@@ -82,7 +131,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
       length: 2,
       child: Scaffold(
         body: _viewSwitcher(),
-        appBar: (_selectedIndex == 1)
+        appBar: (_selectedIndex == 2)
             ? AppBar(
                 backgroundColor: Colors.teal,
                 bottom: _tabBar(),
@@ -109,8 +158,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
     final picker = Provider.of<ImagePickerService>(context, listen: false);
     final url = await picker.uploadParseImage(
       context,
-      widget.servicePoint.adminId,
-      widget.servicePoint.name,
+      widget.servicePoint,
     );
     setState(() {
       imageUrl = url;
@@ -121,7 +169,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
     print('upload response: $url');
   }
 
-  Widget _tableWithInitialValue(Map<String, dynamic> savedMap) {
+  Widget _feeTableWithInitialValue(Map<String, dynamic> savedMap) {
     return FormBuilder(
       key: _fbKey1,
       initialValue: savedMap,
@@ -354,62 +402,322 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            FormBuilderTextField(
-              attribute: 'rules',
-              maxLines: null,
-              maxLength: null,
-              minLines: 4,
-              keyboardType: TextInputType.multiline,
-              validators: [FormBuilderValidators.required()],
-              decoration: InputDecoration(
-                hintText: 'Write Rules here',
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.teal),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black),
+        child: FormBuilderTextField(
+          attribute: 'rules',
+          maxLines: null,
+          maxLength: null,
+          minLines: 4,
+          keyboardType: TextInputType.multiline,
+          validators: [FormBuilderValidators.required()],
+          decoration: InputDecoration(
+            hintText: 'Write Rules here',
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.teal),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _timePicker(
+      BuildContext context, int hr, int min, String key1, String key2) {
+    return DateTimeField(
+      format: _format,
+      initialValue: DateTime(2020, 12, 31, hr, min),
+      onShowPicker: (context, currentValue) async {
+        final time = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
+        );
+        return (time != null) ? DateTimeField.convert(time) : currentValue;
+      },
+      onChanged: (dateTime) {
+        var pickedTime = TimeOfDay.fromDateTime(dateTime);
+        savedMap[key1][key2]['hr'] = pickedTime.hour;
+        savedMap[key1][key2]['min'] = pickedTime.minute;
+      },
+    );
+  }
+
+  Widget _timingsWithInitialValue(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: DataTable(
+        columnSpacing: 8.0,
+        dataRowHeight: 48.0,
+        showBottomBorder: true,
+        horizontalMargin: 8.0,
+        columns: <DataColumn>[
+          DataColumn(
+            label: Text(
+              'Days',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Status',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Opening Time',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Closing Time',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ),
+        ],
+        rows: <DataRow>[
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Sunday'),
+              ),
+              DataCell(
+                // Text(savedMap['sunday']['clopen']),
+                CustomSwitch(
+                  initialName: savedMap['sunday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['sunday']['clopen'] = value;
+                  },
                 ),
               ),
-            ),
-            SizedBox(height: 16.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                MaterialButton(
-                  color: Colors.teal,
-                  onPressed: () async {
-                    final auth =
-                        Provider.of<ParseAuthService>(context, listen: false);
-                    if (_fbKey2.currentState.saveAndValidate()) {
-                      print(_fbKey2.currentState.value);
-                      // save map to servicepoint on backend
-                      final jsonString =
-                          json.encode(_fbKey2.currentState.value);
-                      await auth.saveLibraryRules(
-                          widget.servicePoint, jsonString);
-                    }
-                  },
-                  child: const Text(
-                    'Submit',
-                    style: TextStyle(color: Colors.white),
-                  ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['sunday']['opening']['hr'],
+                  savedMap['sunday']['opening']['min'],
+                  'sunday',
+                  'opening',
                 ),
-                MaterialButton(
-                  color: Colors.teal,
-                  onPressed: () {
-                    _fbKey2.currentState.reset();
-                  },
-                  child: const Text(
-                    'Reset',
-                    style: TextStyle(color: Colors.white),
-                  ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['sunday']['closing']['hr'],
+                  savedMap['sunday']['closing']['min'],
+                  'sunday',
+                  'closing',
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Monday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['monday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['monday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['monday']['opening']['hr'],
+                  savedMap['monday']['opening']['min'],
+                  'monday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['monday']['closing']['hr'],
+                  savedMap['monday']['closing']['min'],
+                  'monday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Tuesday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['tuesday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['tuesday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['tuesday']['opening']['hr'],
+                  savedMap['tuesday']['opening']['min'],
+                  'tuesday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['tuesday']['closing']['hr'],
+                  savedMap['tuesday']['closing']['min'],
+                  'tuesday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Wednesday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['wednesday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['wednesday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['wednesday']['opening']['hr'],
+                  savedMap['wednesday']['opening']['min'],
+                  'wednesday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['wednesday']['closing']['hr'],
+                  savedMap['wednesday']['closing']['min'],
+                  'wednesday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Thursday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['thursday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['thursday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['thursday']['opening']['hr'],
+                  savedMap['thursday']['opening']['min'],
+                  'thursday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['thursday']['closing']['hr'],
+                  savedMap['thursday']['closing']['min'],
+                  'thursday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Friday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['friday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['friday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['friday']['opening']['hr'],
+                  savedMap['friday']['opening']['min'],
+                  'friday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['friday']['closing']['hr'],
+                  savedMap['friday']['closing']['min'],
+                  'friday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+          DataRow(
+            cells: <DataCell>[
+              DataCell(
+                Text('Saturday'),
+              ),
+              DataCell(
+                CustomSwitch(
+                  initialName: savedMap['saturday']['clopen'],
+                  onAltered: (value) {
+                    print(value);
+                    savedMap['saturday']['clopen'] = value;
+                  },
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['saturday']['opening']['hr'],
+                  savedMap['saturday']['opening']['min'],
+                  'saturday',
+                  'opening',
+                ),
+              ),
+              DataCell(
+                _timePicker(
+                  context,
+                  savedMap['saturday']['closing']['hr'],
+                  savedMap['saturday']['closing']['min'],
+                  'saturday',
+                  'closing',
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -465,7 +773,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
                         } else {
                           if (snapshot.hasData) {
                             _savedMap = snapshot.data.toJson();
-                            return _tableWithInitialValue(_savedMap);
+                            return _feeTableWithInitialValue(_savedMap);
                           } else {
                             // initialize _savedMap with zeros
                             _savedMap = {
@@ -482,7 +790,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
                               "twelvesix": '0',
                               "twelvetwelve": '0',
                             };
-                            return _tableWithInitialValue(_savedMap);
+                            return _feeTableWithInitialValue(_savedMap);
                           }
                         }
                       },
@@ -550,6 +858,103 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
                         }
                       },
                     ),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () async {
+                            final auth = Provider.of<ParseAuthService>(context,
+                                listen: false);
+                            if (_fbKey2.currentState.saveAndValidate()) {
+                              print(_fbKey2.currentState.value);
+                              // save map to servicepoint on backend
+                              final jsonString =
+                                  json.encode(_fbKey2.currentState.value);
+                              await auth.saveLibraryRules(
+                                  widget.servicePoint, jsonString);
+                            }
+                          },
+                          child: const Text(
+                            'Submit',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () {
+                            _fbKey2.currentState.reset();
+                          },
+                          child: const Text(
+                            'Reset',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.0),
+                    Center(
+                      child: Text(
+                        'Library Timings:',
+                        style: TextStyle(fontSize: 20, color: Colors.black),
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    FutureBuilder<LibraryTimings>(
+                      future: ParseAuthService.getLibraryTimings(
+                          widget.servicePoint),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<LibraryTimings> snapshot) {
+                        // Map<String, dynamic> _savedMap;
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else {
+                          if (snapshot.hasData) {
+                            savedMap = snapshot.data.toJson();
+                            defaultMap = savedMap;
+                          } else {
+                            savedMap = defaultMap;
+                          }
+                          return _timingsWithInitialValue(context);
+                        }
+                      },
+                    ),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () async {
+                            final auth = Provider.of<ParseAuthService>(context,
+                                listen: false);
+                            print(savedMap);
+                            // save map to servicepoint on backend
+                            final jsonString = json.encode(savedMap);
+                            await auth.saveLibraryTimings(
+                                widget.servicePoint, jsonString);
+                          },
+                          child: const Text(
+                            'Submit',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () {
+                            setState(() {
+                              savedMap = defaultMap;
+                            });
+                          },
+                          child: const Text(
+                            'Reset',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -558,6 +963,30 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
         ),
       ],
     );
+  }
+
+  Widget _qrCodeView() {
+    if (widget.servicePoint.imageUrl == null) {
+      return Center(
+        child: Container(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'Set image of service, before using its QR Code',
+            style: TextStyle(color: Colors.teal, fontSize: 24.0),
+          ),
+        ),
+      );
+    } else {
+      return Center(
+        child: Container(
+          padding: EdgeInsets.all(16.0),
+          child: RegenerativeQRImage(
+            periodInSeconds: 5,
+            servicePoint: widget.servicePoint,
+          ),
+        ),
+      );
+    }
   }
 
   Widget _usersView() {
@@ -608,13 +1037,6 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
                   ),
                   fullscreenDialog: true,
                 ));
-                // final auth =
-                //     Provider.of<ParseAuthService>(context, listen: false);
-                // await auth.approveSubscriber(widget.servicePoint, subscriber);
-                // setState(() {
-                //   unpaidSubscribers.removeAt(index);
-                //   _getSubscribers();
-                // });
               },
             ),
             elevation: 2.0,
@@ -715,12 +1137,12 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
           label: 'Settings',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.group),
-          label: 'Users',
+          icon: Icon(Icons.qr_code),
+          label: 'QR Code',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.insert_chart_outlined),
-          label: 'Stats',
+          icon: Icon(Icons.group),
+          label: 'Users',
         ),
       ],
       currentIndex: _selectedIndex,

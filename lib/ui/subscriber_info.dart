@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_countdown_timer/countdown_timer_controller.dart';
 import 'package:flutter_countdown_timer/flutter_countdown_timer.dart';
-import 'package:flutter_touch_spin/flutter_touch_spin.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:touchlesspro_back4app/models/session_booking.dart';
 
 class SubscriberInfo extends StatefulWidget {
   final Subscriber subscriber;
@@ -26,7 +26,7 @@ class SubscriberInfo extends StatefulWidget {
 
 class _SubscriberInfoState extends State<SubscriberInfo> {
   bool isChanged = false;
-  int incrementByAdmin = 0;
+  double incrementByAdmin = 0;
   CountdownTimerController controller;
 
   void _setSubscriptionEndTime() {
@@ -75,24 +75,38 @@ class _SubscriberInfoState extends State<SubscriberInfo> {
               SizedBox(height: 20.0),
               if (widget.paymentStatus == PaymentStatus.Paid)
                 // integral touch spinner here
-                TouchSpin(
+                Slider(
+                  value: incrementByAdmin,
                   min: 0,
-                  max: 29,
-                  step: 1,
-                  value: 0,
-                  textStyle: TextStyle(fontSize: 36),
-                  iconSize: 48.0,
-                  addIcon: Icon(Icons.add_circle_outline, color: Colors.teal),
-                  subtractIcon:
-                      Icon(Icons.remove_circle_outline, color: Colors.teal),
-                  iconPadding: EdgeInsets.all(20),
-                  onChanged: (val) {
+                  max: 30,
+                  divisions: 30,
+                  label: incrementByAdmin.floor().toString(),
+                  activeColor: Colors.teal,
+                  onChanged: (double value) {
                     setState(() {
-                      incrementByAdmin = val;
+                      incrementByAdmin = value;
                       isChanged = true;
                     });
                   },
                 ),
+              // TouchSpin(
+              //   min: 0,
+              //   max: 29,
+              //   step: 1,
+              //   value: 0,
+              //   textStyle: TextStyle(fontSize: 36),
+              //   iconSize: 48.0,
+              //   addIcon: Icon(Icons.add_circle_outline, color: Colors.teal),
+              //   subtractIcon:
+              //       Icon(Icons.remove_circle_outline, color: Colors.teal),
+              //   iconPadding: EdgeInsets.all(20),
+              //   onChanged: (val) {
+              //     setState(() {
+              //       incrementByAdmin = val;
+              //       isChanged = true;
+              //     });
+              //   },
+              // ),
               SizedBox(height: 40.0),
               if (isChanged)
                 MaterialButton(
@@ -100,10 +114,10 @@ class _SubscriberInfoState extends State<SubscriberInfo> {
                   onPressed: () async {
                     final auth =
                         Provider.of<ParseAuthService>(context, listen: false);
-                    await auth.incrementDaysBy(incrementByAdmin,
+                    await auth.incrementDaysBy(incrementByAdmin.floor(),
                         widget.servicePoint, widget.subscriber);
                     widget.delegateListUpdate(
-                        incrementByAdmin + widget.subscriber.extension);
+                        incrementByAdmin.floor() + widget.subscriber.extension);
                   },
                   child: const Text(
                     'Save Changes',
@@ -278,6 +292,27 @@ class _SubscriberInfoState extends State<SubscriberInfo> {
                 child: SizedBox(
                   height: 30.0,
                   child: Center(child: _daysLeftText(context)),
+                ),
+                verticalAlignment: TableCellVerticalAlignment.middle,
+              ),
+            ],
+          ),
+        if (widget.paymentStatus == PaymentStatus.Paid)
+          TableRow(
+            children: [
+              TableCell(
+                child: SizedBox(
+                  height: 30.0,
+                  child: Center(child: Text('Status')),
+                ),
+                verticalAlignment: TableCellVerticalAlignment.middle,
+              ),
+              TableCell(
+                child: SizedBox(
+                  height: 30.0,
+                  child: Center(
+                      child:
+                          Text(statusToName[widget.subscriber.sessionStatus])),
                 ),
                 verticalAlignment: TableCellVerticalAlignment.middle,
               ),

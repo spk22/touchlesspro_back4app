@@ -4,7 +4,6 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/models/user_state.dart';
-import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/library_entrance.dart';
 import 'package:touchlesspro_back4app/ui/library_home.dart';
 import 'package:touchlesspro_back4app/ui/library_user_form.dart';
@@ -187,9 +186,8 @@ class _LibraryServiceState extends State<LibraryService> {
 
   Future<void> _verifyOTP(BuildContext context) async {
     if (otp.resultChecker(int.parse(inputOtp))) {
-      final auth = Provider.of<ParseAuthService>(context, listen: false);
       // save phone number to local db
-      String boxName = await auth.getServiceId(widget.servicePoint);
+      String boxName = widget.servicePoint.serviceId;
       var box = await Hive.openBox(boxName);
       box.put('number', _authObject['number']);
       box.put('countryCode', _authObject['countryCode']);

@@ -4,6 +4,7 @@ import 'package:touchlesspro_back4app/models/subscription.dart';
 enum ServiceType { office, library, exam }
 
 class ServicePoint {
+  String serviceId;
   final String adminId;
   final String name;
   final ServiceType serviceType;
@@ -11,13 +12,14 @@ class ServicePoint {
   String imageUrl;
 
   ServicePoint(
-      {@required this.adminId,
+      {this.serviceId,
+      @required this.adminId,
       @required this.name,
       @required this.serviceType,
       this.imageUrl});
 
-  ServicePoint.withUserIds(
-      this.adminId, this.name, this.serviceType, this.imageUrl, this.userIds);
+  ServicePoint.withUserIds(this.serviceId, this.adminId, this.name,
+      this.serviceType, this.imageUrl, this.userIds);
 
   int estimateCost(int slot, int duration, SubscriptionPlan plan) {
     if (slot == null) {

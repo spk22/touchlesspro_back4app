@@ -68,8 +68,7 @@ class _ServicesListState extends State<ServicesList> {
   Future<void> _onViewItem(
       BuildContext context, ServicePoint servicePoint, int index) async {
     print('pressed ${servicePoint.name}');
-    final auth = Provider.of<ParseAuthService>(context, listen: false);
-    String boxName = await auth.getServiceId(servicePoint);
+    String boxName = servicePoint.serviceId;
     //
     StateSelector selector =
         StateSelector(boxName: boxName, servicePoint: servicePoint);

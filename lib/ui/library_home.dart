@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_countdown_timer/countdown_timer_controller.dart';
 import 'package:flutter_countdown_timer/flutter_countdown_timer.dart';
+import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/constants/popupmenu_constants.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
+import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/blinking_text.dart';
+import 'package:qrscan/qrscan.dart' as scanner;
+import 'package:touchlesspro_back4app/models/session_booking.dart';
+import 'package:touchlesspro_back4app/ui/timings_info.dart';
 
 class LibraryHome extends StatefulWidget {
   final ServicePoint servicePoint;
@@ -20,6 +25,8 @@ class LibraryHome extends StatefulWidget {
 
 class _LibraryHomeState extends State<LibraryHome> {
   CountdownTimerController controller;
+  String qrCode;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _setSubscriptionEndTime() {
     DateTime endDateTime = widget.subscriber.approvedAt.toLocal().add(Duration(
@@ -41,7 +48,7 @@ class _LibraryHomeState extends State<LibraryHome> {
 
   @override
   void dispose() {
-    controller.disposeTimer();
+    // controller.disposeTimer();
     super.dispose();
   }
 
@@ -71,7 +78,15 @@ class _LibraryHomeState extends State<LibraryHome> {
         ),
         floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.teal,
-          onPressed: () {},
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16.0)),
+          ),
+          child: (widget.subscriber.sessionStatus == SessionStatus.outside)
+              ? Text('Scan')
+              : Text('End'),
+          onPressed: (widget.subscriber.sessionStatus == SessionStatus.outside)
+              ? _onScanPressed
+              : _onEndPressed,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         body: Stack(
@@ -115,7 +130,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                       height: MediaQuery.of(context).size.height * 0.25,
                       width: MediaQuery.of(context).size.width * 0.8,
                       child: Text(
-                        'You subscribed at',
+                        '${statusToName[widget.subscriber.sessionStatus]}',
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -196,10 +211,15 @@ class _LibraryHomeState extends State<LibraryHome> {
     );
   }
 
-  void choiceAction(PopupOption choice) {
+  void choiceAction(PopupOption choice) async {
     switch (choice) {
       case PopupOption.openingTimes:
-        {}
+        {
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => TimingsInfo(servicePoint: widget.servicePoint),
+            fullscreenDialog: true,
+          ));
+        }
         break;
       case PopupOption.location:
         {}
@@ -210,6 +230,66 @@ class _LibraryHomeState extends State<LibraryHome> {
       case PopupOption.feedback:
         {}
         break;
+    }
+  }
+
+  void _callSnackBar(String message) {
+    _scaffoldKey.currentState.showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  void _onScanPressed() async {
+    // when sessionStatus is outside
+    qrCode = await scanner.scan();
+    if (qrCode == null)
+      _callSnackBar('code not found, scanning failed');
+    else {
+      print(qrCode);
+      SessionBooking booking = SessionBooking(
+        token: qrCode,
+        timing: DateTime.now(),
+        status: SessionStatus.inside,
+        extension: 0,
+      );
+      // create user session
+      final auth = Provider.of<ParseAuthService>(context, listen: false);
+      booking = await auth.startBooking(
+          widget.servicePoint, widget.subscriber, booking);
+      if (booking.success) {
+        // update user session
+        setState(() {
+          widget.subscriber.sessionStatus = SessionStatus.inside;
+        });
+      } else {
+        _callSnackBar('Could not capture session. Try again!');
+      }
+    }
+  }
+
+  void _onEndPressed() async {
+    // when sessionStatus is inside
+    // end user session
+    SessionBooking booking = SessionBooking(
+      token: '',
+      timing: DateTime.now(),
+      status: SessionStatus.outside,
+      extension: 0,
+    );
+    final auth = Provider.of<ParseAuthService>(context, listen: false);
+    booking =
+        await auth.endBooking(widget.servicePoint, widget.subscriber, booking);
+    if (booking.success) {
+      // update user session
+      setState(() {
+        widget.subscriber.sessionStatus = SessionStatus.outside;
+      });
+      // navigate out of library home
+      Navigator.of(context).pop();
+    } else {
+      _callSnackBar('Could not end session. Try again!');
     }
   }
 }

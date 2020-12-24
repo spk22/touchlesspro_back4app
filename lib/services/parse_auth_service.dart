@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:touchlesspro_back4app/models/library_rules.dart';
+import 'package:touchlesspro_back4app/models/library_timings.dart';
 import 'package:touchlesspro_back4app/models/phone_details.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/services/app_keys.dart';
 import 'package:touchlesspro_back4app/models/subscription.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
+import 'package:touchlesspro_back4app/models/session_booking.dart';
 
 @immutable
 class User {
@@ -103,65 +105,75 @@ class ParseAuthService {
   // sets the image of servicepoint having servicename = name and
   // returns the imageUrl
   Future<String> setImage(
-      PickedFile selectedImage, String uid, String name) async {
+      PickedFile selectedImage, ServicePoint servicePoint) async {
     ParseFileBase parseFile = ParseFile(File(selectedImage.path));
-    // get record from ServicePoints having adminId = uid & serviceName = name
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', uid)
-          ..whereEqualTo('serviceName', name);
-    final ParseResponse response = await queryBuilder.query();
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     String imageUrl;
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        record.set('image', parseFile);
-        final imageResponse = await record.save();
-        if (imageResponse.success) {
-          imageUrl = record.get<ParseFileBase>('image').url;
-        }
+      final ParseObject record = response.results[0];
+      record.set('image', parseFile);
+      final imageResponse = await record.save();
+      if (imageResponse.success) {
+        imageUrl = record.get<ParseFileBase>('image').url;
       }
     }
     return imageUrl;
   }
 
   Future<void> createServicePoint(ServicePoint servicePoint) async {
-    String tempName = servicePoint.name + servicePoint.adminId;
-    String servicePointName = tempName.replaceAll(RegExp(' +'), '');
-    final ParseObject newObject = ParseObject(servicePointName);
-    await newObject.create();
     final ParseObject newServicePoint = ParseObject('ServicePoints');
+    await newServicePoint.create();
+    // create subscriber class (table)
+    String subscriberClassName = newServicePoint.objectId + 'Subscribers';
+    final ParseObject subscriberObject = ParseObject(subscriberClassName);
+    await subscriberObject.create();
+    // create session class (table)
+    String sessionClassName = newServicePoint.objectId + 'Sessions';
+    final ParseObject sessionObject = ParseObject(sessionClassName);
+    await sessionObject.create();
+    // create feedback class (table)
+    String feedbackClassName = newServicePoint.objectId + 'Feedbacks';
+    final ParseObject feedbackObject = ParseObject(feedbackClassName);
+    await feedbackObject.create();
+    // create dues class (table)
+    String duesClassName = newServicePoint.objectId + 'Dues';
+    final ParseObject duesObject = ParseObject(duesClassName);
+    await duesObject.create();
 
     newServicePoint.set<String>('adminId', servicePoint.adminId);
     newServicePoint.set<String>('serviceName', servicePoint.name);
     newServicePoint.set<String>(
         'serviceType', _typeToLabel[servicePoint.serviceType]);
-    newServicePoint.set<String>('serviceClass', servicePointName);
-    var response = await newServicePoint.create();
+    newServicePoint.set<String>('subscriberClass', subscriberClassName);
+    newServicePoint.set<String>('sessionClass', sessionClassName);
+    newServicePoint.set<String>('feedbackClass', feedbackClassName);
+    newServicePoint.set('duesClass', duesClassName);
+    newServicePoint.set<String>('plan', '');
+    newServicePoint.set<String>('rules', '');
+    newServicePoint.set<String>('timings', '');
+    var response = await newServicePoint.save();
     if (response.success) {
-      await newObject.delete();
+      await subscriberObject.delete();
+      await sessionObject.delete();
+      await feedbackObject.delete();
+      await duesObject.delete();
     }
   }
 
   Future<void> updateServiceName(
-      ServicePoint newServicePoint, ServicePoint oldServicePoint) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', oldServicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
+      ServicePoint servicePoint, String newName) async {
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == oldServicePoint.name) {
-          record.set<String>('serviceName', newServicePoint.name);
-          record.save();
-        }
-      }
+      final ParseObject record = response.results[0];
+      record.set('serviceName', newName);
+      record.save();
     }
   }
 
   Future<void> deleteServiceFromList(ServicePoint servicePoint) async {
+    //TODO: store names of deleted classes in a separate class "Deleted"
     final ParseObject serviceObject = ParseObject('ServicePoints');
     final QueryBuilder<ParseObject> queryBuilder =
         QueryBuilder<ParseObject>(serviceObject)
@@ -177,24 +189,6 @@ class ParseAuthService {
         }
       }
     }
-  }
-
-  Future<String> getServiceId(ServicePoint servicePoint) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
-    String id;
-    if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == servicePoint.name) {
-          id = record.objectId;
-        }
-      }
-    }
-    return id;
   }
 
   static Future<List<ServicePoint>> getServiceList(String uid) async {
@@ -227,6 +221,7 @@ class ParseAuthService {
           }
         }
         listOfServicePoints.add(ServicePoint.withUserIds(
+          record.objectId,
           uid,
           serviceName,
           serviceType,
@@ -269,6 +264,7 @@ class ParseAuthService {
           }
         }
         listOfServicePoints.add(ServicePoint.withUserIds(
+          record.objectId,
           uid,
           serviceName,
           serviceType,
@@ -282,85 +278,79 @@ class ParseAuthService {
 
   Future<void> saveSubscriptionPlan(
       ServicePoint servicePoint, String mapString) async {
-    //
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == servicePoint.name) {
-          record.set<String>('plan', mapString);
-          record.save();
-        }
-      }
+      final ParseObject record = response.results[0];
+      record.set<String>('plan', mapString);
+      record.save();
     }
   }
 
   static Future<SubscriptionPlan> getSubscriptionPlan(
       ServicePoint servicePoint) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     SubscriptionPlan plan;
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == servicePoint.name) {
-          String jsonString = record.get<String>('plan');
-          plan = (jsonString != null) ? planFromJson(jsonString) : null;
-        }
-      }
+      final ParseObject record = response.results[0];
+      String jsonString = record.get<String>('plan');
+      plan = (jsonString != null) ? planFromJson(jsonString) : null;
     }
     return plan;
   }
 
   Future<void> saveLibraryRules(
       ServicePoint servicePoint, String mapString) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String serviceName = record.get<String>('serviceName');
-        if (serviceName == servicePoint.name) {
-          record.set<String>('rules', mapString);
-          record.save();
-        }
-      }
+      final ParseObject record = response.results[0];
+      record.set<String>('rules', mapString);
+      record.save();
     }
   }
 
   static Future<LibraryRules> getLibraryRules(ServicePoint servicePoint) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId);
-    final ParseResponse response = await queryBuilder.query();
-    String jsonString;
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
+    LibraryRules rules;
     if (response.success && response.count > 0) {
-      for (ParseObject record in response.results) {
-        String rules = record.get<String>('rules');
-        if (rules != null) jsonString = rules;
-      }
+      final ParseObject record = response.results[0];
+      String jsonString = record.get<String>('rules');
+      rules = (jsonString != null) ? rulesFromJson(jsonString) : null;
     }
-    return rulesFromJson(jsonString);
+    return rules;
+  }
+
+  Future<void> saveLibraryTimings(
+      ServicePoint servicePoint, String mapString) async {
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
+    if (response.success && response.count > 0) {
+      final ParseObject record = response.results[0];
+      record.set('timings', mapString);
+      record.save();
+    }
+  }
+
+  static Future<LibraryTimings> getLibraryTimings(
+      ServicePoint servicePoint) async {
+    LibraryTimings timings;
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
+    if (response.success && response.count > 0) {
+      final ParseObject record = response.results[0];
+      String jsonString = record.get<String>('timings');
+      timings = (jsonString != null) ? timingsFromJson(jsonString) : null;
+    }
+    return timings;
   }
 
   static Future<Status> statusFromBackend(
       ServicePoint servicePoint, String number) async {
-    final ParseObject serviceObject = ParseObject('ServicePoints');
-    final QueryBuilder<ParseObject> queryBuilder =
-        QueryBuilder<ParseObject>(serviceObject)
-          ..whereEqualTo('adminId', servicePoint.adminId)
-          ..whereEqualTo('serviceName', servicePoint.name);
-    final ParseResponse response = await queryBuilder.query();
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
     Status status = Status(false, false);
     if (response.success && response.count > 0) {
       ParseObject parseObject = response.results[0];
@@ -393,6 +383,9 @@ class ParseAuthService {
         subscriber.extension = (record.containsKey('extendedBy'))
             ? record.get<int>('extendedBy')
             : 0;
+        if (record.containsKey('sessionStatus'))
+          subscriber.sessionStatus =
+              nameToStatus[record.get<String>('sessionStatus')];
         status.subscriber = subscriber;
       }
     }
@@ -482,6 +475,9 @@ class ParseAuthService {
               );
               if (record.containsKey('extendedBy'))
                 subscriber.extension = record.get<int>('extendedBy');
+              if (record.containsKey('sessionStatus'))
+                subscriber.sessionStatus =
+                    nameToStatus[record.get<String>('sessionStatus')];
               (record.get<bool>('paid'))
                   ? paidList.add(subscriber)
                   : unpaidList.add(subscriber);
@@ -518,6 +514,9 @@ class ParseAuthService {
         record.set<bool>('paid', true);
         record.set<DateTime>('approvedAt', subscriber.approvedAt);
         record.set<int>('extendedBy', subscriber.extension);
+        record.set<String>(
+            'sessionStatus', statusToName[subscriber.sessionStatus]);
+        record.set<String>('token', 'abc');
         record.save();
         // set subscriber as record in User table
         await signUpUser(record.objectId, subscriber.otp.toString());
@@ -574,6 +573,122 @@ class ParseAuthService {
         if (record.containsKey('extendedBy')) {
           record.setIncrement('extendedBy', increment);
           await record.save();
+        }
+      }
+    }
+  }
+
+  static Future<String> getQRCode(ServicePoint servicePoint) async {
+    String result;
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String sessionClassName = parseObject.get<String>('sessionClass');
+      final ParseObject classObject = ParseObject(sessionClassName);
+      final objectResponse = await classObject.create();
+      if (objectResponse.success) {
+        final ParseObject record = objectResponse.results[0];
+        result = record.objectId;
+        record.set<bool>('isBooked', false);
+        await record.save();
+      }
+    }
+    return result;
+  }
+
+  Future<SessionBooking> startBooking(ServicePoint servicePoint,
+      Subscriber subscriber, SessionBooking booking) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String sessionClassName = parseObject.get<String>('sessionClass');
+      final ParseObject sessionClass = ParseObject(sessionClassName);
+      final classResponse = await sessionClass.getObject(booking.token);
+      if (classResponse.success && classResponse.count > 0) {
+        final ParseObject record = classResponse.results[0];
+        record.set<bool>('isBooked', true);
+        record.set<DateTime>('bookedAt', booking.timing);
+        record.set<int>('extension', booking.extension);
+        final bookedResponse = await record.save();
+        booking.success = bookedResponse.success;
+        if (bookedResponse.success) {
+          // set token and sessionStatus of subscriber
+          String serviceClassName = parseObject.get<String>('serviceClass');
+          final serviceResponse =
+              await ParseObject(serviceClassName).getObject(subscriber.uid);
+          final ParseObject newRecord = serviceResponse.results[0];
+          newRecord.set<String>('token', booking.token);
+          newRecord.set<String>('sessionStatus', statusToName[booking.status]);
+          await newRecord.save();
+        }
+      }
+      // unbooked records will be deleted from admin side
+    }
+    return booking;
+  }
+
+  Future<SessionBooking> endBooking(ServicePoint servicePoint,
+      Subscriber subscriber, SessionBooking booking) async {
+    booking.success = false;
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String serviceClassName = parseObject.get<String>('serviceClass');
+      final apiResponse =
+          await ParseObject(serviceClassName).getObject(subscriber.uid);
+      final ParseObject record = apiResponse.results[0];
+      String token = record.get<String>('token');
+      String sessionClassName = parseObject.get<String>('sessionClass');
+      final ParseObject sessionClass = ParseObject(sessionClassName);
+      final classResponse = await sessionClass.getObject(token);
+      if (classResponse.success && classResponse.count > 0) {
+        final ParseObject sessionRecord = classResponse.results[0];
+        sessionRecord.set<DateTime>('stoppedAt', booking.timing);
+        record.set<String>('sessionStatus', statusToName[booking.status]);
+        await record.save();
+        final endResponse = await sessionRecord.save();
+        booking.success = endResponse.success;
+      }
+    }
+    return booking;
+  }
+
+  static Future<void> deleteUnbookedSessions(ServicePoint servicePoint) async {
+    final ParseObject serviceObject = ParseObject('ServicePoints');
+    final QueryBuilder<ParseObject> queryBuilder =
+        QueryBuilder<ParseObject>(serviceObject)
+          ..whereEqualTo('adminId', servicePoint.adminId)
+          ..whereEqualTo('serviceName', servicePoint.name);
+    final ParseResponse response = await queryBuilder.query();
+    if (response.success && response.count > 0) {
+      ParseObject parseObject = response.results[0];
+      String sessionClassName = parseObject.get<String>('sessionClass');
+      final ParseObject sessionClass = ParseObject(sessionClassName);
+      final QueryBuilder<ParseObject> myQueryBuilder =
+          QueryBuilder<ParseObject>(sessionClass)
+            ..whereNotEqualTo('isBooked', true);
+      final ParseResponse apiResponse = await myQueryBuilder.query();
+      if (apiResponse.success && apiResponse.count > 0) {
+        // iterate over all unbooked sessions (records)
+        if (apiResponse.results != null) {
+          for (ParseObject record in apiResponse.results) {
+            await record.delete();
+          }
         }
       }
     }

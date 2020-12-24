@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
+import 'package:touchlesspro_back4app/models/session_booking.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
 import 'package:touchlesspro_back4app/ui/library_home.dart';
@@ -73,6 +74,8 @@ class _LibraryEntranceState extends State<LibraryEntrance> {
       widget.subscriber.approvedAt = DateTime.now();
       // set initial extension of days = 0
       widget.subscriber.extension = 0;
+      // set sessionStatus of subscriber
+      widget.subscriber.sessionStatus = SessionStatus.outside;
       // approve subscriber
       final auth = Provider.of<ParseAuthService>(context, listen: false);
       await auth.approveSubscriber(widget.servicePoint, widget.subscriber);

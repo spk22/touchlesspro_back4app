@@ -215,7 +215,7 @@ class Checkout extends StatelessWidget {
           final auth = Provider.of<ParseAuthService>(context, listen: false);
           bool success = await auth.addSubscriber(servicePoint, subscriber);
           // save configuration to local DB (Hive)
-          String boxName = await auth.getServiceId(servicePoint);
+          String boxName = servicePoint.serviceId;
           var box = await Hive.openBox(boxName);
 
           if (!success) {

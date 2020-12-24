@@ -285,20 +285,17 @@ class _DashboardState extends State<Dashboard> {
             ),
             FlatButton(
               onPressed: () async {
-                ServicePoint newServicePoint;
                 if (serviceName != null) {
-                  newServicePoint = ServicePoint(
-                    adminId: itemServicePoint.adminId,
-                    name: serviceName,
-                    serviceType: itemServicePoint.serviceType,
-                  );
-                  await auth.updateServiceName(
-                      newServicePoint, itemServicePoint);
+                  await auth.updateServiceName(itemServicePoint, serviceName);
                 }
                 Navigator.of(context).pop();
                 setState(() {
                   if (serviceName != null) {
-                    listOfServicePoints[index] = newServicePoint;
+                    listOfServicePoints[index] = ServicePoint(
+                        serviceId: itemServicePoint.serviceId,
+                        adminId: itemServicePoint.adminId,
+                        name: itemServicePoint.name,
+                        serviceType: itemServicePoint.serviceType);
                     serviceName = null;
                   }
                 });

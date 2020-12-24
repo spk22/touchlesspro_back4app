@@ -1,4 +1,5 @@
 import 'package:touchlesspro_back4app/models/phone_details.dart';
+import 'package:touchlesspro_back4app/models/session_booking.dart';
 
 class Subscriber {
   String uid;
@@ -11,6 +12,7 @@ class Subscriber {
   int otp;
   DateTime approvedAt;
   int extension;
+  SessionStatus sessionStatus;
   Subscriber(
       {this.name,
       this.preparingFor,
