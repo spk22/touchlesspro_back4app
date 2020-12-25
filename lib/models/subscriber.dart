@@ -13,6 +13,7 @@ class Subscriber {
   DateTime approvedAt;
   int extension;
   SessionStatus sessionStatus;
+  String token;
   Subscriber(
       {this.name,
       this.preparingFor,

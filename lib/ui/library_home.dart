@@ -24,21 +24,37 @@ class LibraryHome extends StatefulWidget {
 }
 
 class _LibraryHomeState extends State<LibraryHome> {
-  CountdownTimerController controller;
+  CountdownTimerController subscriptionDaysController;
+  CountdownTimerController sessionHoursController;
   String qrCode;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  SessionBooking booking;
+
+  void _setSessionEndTime(SessionBooking booking) {
+    if (widget.subscriber.sessionStatus == SessionStatus.inside) {
+      DateTime endDateTime = booking.timing.toLocal().add(
+            Duration(hours: widget.subscriber.slot + booking.extension),
+          );
+      int endTime = endDateTime.millisecondsSinceEpoch;
+      sessionHoursController =
+          CountdownTimerController(endTime: endTime, onEnd: onEnd);
+    }
+  }
 
   void _setSubscriptionEndTime() {
     DateTime endDateTime = widget.subscriber.approvedAt.toLocal().add(Duration(
         days:
             (widget.subscriber.planMonths * 30) + widget.subscriber.extension));
     int endTime = endDateTime.millisecondsSinceEpoch;
-    controller = CountdownTimerController(endTime: endTime, onEnd: onEnd);
+    subscriptionDaysController =
+        CountdownTimerController(endTime: endTime, onEnd: onEnd);
   }
 
   @override
   void initState() {
     _setSubscriptionEndTime();
+    // getBooking if booking is null
+    // _setSessionEndTime(booking);
     super.initState();
   }
 
@@ -103,7 +119,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                 children: <Widget>[
                   // timer showing days left in subscription
                   CountdownTimer(
-                    controller: controller,
+                    controller: subscriptionDaysController,
                     widgetBuilder: (context, remainingTime) => Center(
                       child: (remainingTime.days >= 5)
                           ? Text(
@@ -129,9 +145,54 @@ class _LibraryHomeState extends State<LibraryHome> {
                       padding: EdgeInsets.all(8.0),
                       height: MediaQuery.of(context).size.height * 0.25,
                       width: MediaQuery.of(context).size.width * 0.8,
-                      child: Text(
-                        '${statusToName[widget.subscriber.sessionStatus]}',
-                        style: TextStyle(color: Colors.white),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${statusToName[widget.subscriber.sessionStatus]}',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 24.0),
+                          ),
+                          if (widget.subscriber.sessionStatus ==
+                              SessionStatus.inside)
+                            FutureBuilder<SessionBooking>(
+                              future: ParseAuthService.getSessionBooking(
+                                  widget.servicePoint, widget.subscriber.token),
+                              builder: (BuildContext context,
+                                  AsyncSnapshot<SessionBooking> snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator();
+                                } else {
+                                  if (snapshot.hasData) {
+                                    _setSessionEndTime(snapshot.data);
+                                    return CountdownTimer(
+                                        controller: sessionHoursController,
+                                        widgetBuilder:
+                                            (context, remainingTime) {
+                                          print(
+                                              'remaining hours: ${remainingTime.hours}');
+                                          return (remainingTime.hours >= 1)
+                                              ? Text(
+                                                  '${remainingTime.hours} hours left!',
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 24.0),
+                                                )
+                                              : BlinkingText(
+                                                  'Only ${remainingTime.min} mins left!',
+                                                  TextStyle(
+                                                      color: Colors.red,
+                                                      fontSize: 24.0),
+                                                );
+                                        });
+                                  } else {
+                                    return CircularProgressIndicator();
+                                  }
+                                }
+                              },
+                            )
+                        ],
                       ),
                     ),
                   ),
@@ -248,7 +309,7 @@ class _LibraryHomeState extends State<LibraryHome> {
       _callSnackBar('code not found, scanning failed');
     else {
       print(qrCode);
-      SessionBooking booking = SessionBooking(
+      SessionBooking newBooking = SessionBooking(
         token: qrCode,
         timing: DateTime.now(),
         status: SessionStatus.inside,
@@ -256,12 +317,14 @@ class _LibraryHomeState extends State<LibraryHome> {
       );
       // create user session
       final auth = Provider.of<ParseAuthService>(context, listen: false);
-      booking = await auth.startBooking(
-          widget.servicePoint, widget.subscriber, booking);
-      if (booking.success) {
+      newBooking = await auth.startBooking(
+          widget.servicePoint, widget.subscriber, newBooking);
+      if (newBooking.success) {
         // update user session
         setState(() {
           widget.subscriber.sessionStatus = SessionStatus.inside;
+          booking = newBooking;
+          _setSessionEndTime(newBooking);
         });
       } else {
         _callSnackBar('Could not capture session. Try again!');

@@ -31,7 +31,6 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
   String imageUrl;
   final GlobalKey<FormBuilderState> _fbKey1 = GlobalKey<FormBuilderState>();
   final GlobalKey<FormBuilderState> _fbKey2 = GlobalKey<FormBuilderState>();
-  final GlobalKey<FormBuilderState> _fbKey3 = GlobalKey<FormBuilderState>();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   List<Subscriber> paidSubscribers;
@@ -175,12 +174,13 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
       initialValue: savedMap,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(4.0),
         child: DataTable(
-          columnSpacing: 8.0,
+          columnSpacing: 4.0,
           dataRowHeight: 48.0,
           showBottomBorder: true,
-          horizontalMargin: 8.0,
+          horizontalMargin: 4.0,
+          dataTextStyle: TextStyle(color: Colors.black, fontSize: 12.0),
           columns: const <DataColumn>[
             DataColumn(
               label: Text(
@@ -445,12 +445,13 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
 
   Widget _timingsWithInitialValue(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(4.0),
       child: DataTable(
-        columnSpacing: 8.0,
+        columnSpacing: 4.0,
         dataRowHeight: 48.0,
         showBottomBorder: true,
-        horizontalMargin: 8.0,
+        horizontalMargin: 4.0,
+        dataTextStyle: TextStyle(fontSize: 12.0, color: Colors.black),
         columns: <DataColumn>[
           DataColumn(
             label: Text(
@@ -1071,6 +1072,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
           child: Card(
             child: ListTile(
               title: Text('${subscriber.name}'),
+              trailing: Text('${subscriber.phone.number}'),
               onTap: () async {
                 await Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => SubscriberInfo(
