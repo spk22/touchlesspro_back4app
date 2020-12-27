@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:touchlesspro_back4app/models/library_announcement.dart';
 import 'package:touchlesspro_back4app/models/library_rules.dart';
 import 'package:touchlesspro_back4app/models/library_timings.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
@@ -31,6 +32,7 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
   String imageUrl;
   final GlobalKey<FormBuilderState> _fbKey1 = GlobalKey<FormBuilderState>();
   final GlobalKey<FormBuilderState> _fbKey2 = GlobalKey<FormBuilderState>();
+  final GlobalKey<FormBuilderState> _fbKey3 = GlobalKey<FormBuilderState>();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   List<Subscriber> paidSubscribers;
@@ -723,6 +725,34 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
     );
   }
 
+  Widget _announcementWithInitialValue(Map<String, dynamic> savedMap) {
+    return FormBuilder(
+      key: _fbKey3,
+      initialValue: savedMap,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: FormBuilderTextField(
+          attribute: 'message',
+          maxLines: null,
+          maxLength: null,
+          minLines: 4,
+          keyboardType: TextInputType.multiline,
+          validators: [FormBuilderValidators.required()],
+          decoration: InputDecoration(
+            hintText: "Write today's announcement here",
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.teal),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.black),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _settingsView() {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -956,6 +986,60 @@ class _ServiceControlPanelState extends State<ServiceControlPanel> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 20.0),
+                    Center(
+                      child: Text(
+                        'Announcement Message:',
+                        style: TextStyle(fontSize: 20, color: Colors.black),
+                      ),
+                    ),
+                    SizedBox(height: 8.0),
+                    FutureBuilder<LibraryAnnouncement>(
+                      future: ParseAuthService.getLibraryAnnouncement(
+                          widget.servicePoint),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<LibraryAnnouncement> snapshot) {
+                        Map<String, dynamic> _savedMap;
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else {
+                          if (snapshot.hasData) {
+                            _savedMap = snapshot.data.toJson();
+                            return _announcementWithInitialValue(_savedMap);
+                          } else {
+                            _savedMap = {'message': ''};
+                            return _announcementWithInitialValue(_savedMap);
+                          }
+                        }
+                      },
+                    ),
+                    SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        MaterialButton(
+                          color: Colors.teal,
+                          onPressed: () async {
+                            final auth = Provider.of<ParseAuthService>(context,
+                                listen: false);
+                            if (_fbKey3.currentState.saveAndValidate()) {
+                              print(_fbKey3.currentState.value);
+                              // save map to servicepoint on backend
+                              final jsonString =
+                                  json.encode(_fbKey3.currentState.value);
+                              await auth.saveLibraryAnnouncement(
+                                  widget.servicePoint, jsonString);
+                            }
+                          },
+                          child: const Text(
+                            'Submit',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.0),
                   ],
                 ),
               ),

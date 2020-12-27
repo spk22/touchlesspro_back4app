@@ -17,7 +17,7 @@ class ToggleAuthWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Navigator.of(context).pushReplacementNamed(routeName);
+        Navigator.of(context).pushReplacementNamed(routeName);
       },
       child: SizedBox(
         height: 30.0,

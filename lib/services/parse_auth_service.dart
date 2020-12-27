@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:touchlesspro_back4app/models/library_announcement.dart';
 import 'package:touchlesspro_back4app/models/library_rules.dart';
 import 'package:touchlesspro_back4app/models/library_timings.dart';
 import 'package:touchlesspro_back4app/models/phone_details.dart';
@@ -698,4 +699,29 @@ class ParseAuthService {
     ServiceType.library: "library",
     ServiceType.exam: "exam",
   };
+
+  Future<void> saveLibraryAnnouncement(
+      ServicePoint servicePoint, String mapString) async {
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
+    if (response.success && response.count > 0) {
+      final ParseObject record = response.results[0];
+      record.set('announcement', mapString);
+      record.save();
+    }
+  }
+
+  static Future<LibraryAnnouncement> getLibraryAnnouncement(
+      ServicePoint servicePoint) async {
+    final ParseResponse response =
+        await ParseObject('ServicePoints').getObject(servicePoint.serviceId);
+    LibraryAnnouncement announcement;
+    if (response.success && response.count > 0) {
+      final ParseObject record = response.results[0];
+      String jsonString = record.get<String>('announcement');
+      announcement =
+          (jsonString != null) ? announcementFromJson(jsonString) : null;
+    }
+    return announcement;
+  }
 }

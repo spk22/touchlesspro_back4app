@@ -3,6 +3,7 @@ import 'package:flutter_countdown_timer/countdown_timer_controller.dart';
 import 'package:flutter_countdown_timer/flutter_countdown_timer.dart';
 import 'package:provider/provider.dart';
 import 'package:touchlesspro_back4app/constants/popupmenu_constants.dart';
+import 'package:touchlesspro_back4app/models/library_announcement.dart';
 import 'package:touchlesspro_back4app/models/service_point.dart';
 import 'package:touchlesspro_back4app/models/subscriber.dart';
 import 'package:touchlesspro_back4app/services/parse_auth_service.dart';
@@ -53,8 +54,6 @@ class _LibraryHomeState extends State<LibraryHome> {
   @override
   void initState() {
     _setSubscriptionEndTime();
-    // getBooking if booking is null
-    // _setSessionEndTime(booking);
     super.initState();
   }
 
@@ -64,7 +63,6 @@ class _LibraryHomeState extends State<LibraryHome> {
 
   @override
   void dispose() {
-    // controller.disposeTimer();
     super.dispose();
   }
 
@@ -99,10 +97,10 @@ class _LibraryHomeState extends State<LibraryHome> {
           ),
           child: (widget.subscriber.sessionStatus == SessionStatus.outside)
               ? Text('Scan')
-              : Text('End'),
+              : null, //Text('End'),
           onPressed: (widget.subscriber.sessionStatus == SessionStatus.outside)
               ? _onScanPressed
-              : _onEndPressed,
+              : null, //_onEndPressed,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         body: Stack(
@@ -133,87 +131,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                             ),
                     ),
                   ),
-                  Card(
-                    elevation: 5.0,
-                    shadowColor: Colors.grey,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    color: Colors.teal,
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: EdgeInsets.all(8.0),
-                      height: MediaQuery.of(context).size.height * 0.25,
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${statusToName[widget.subscriber.sessionStatus]}',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 24.0),
-                          ),
-                          if (widget.subscriber.sessionStatus ==
-                              SessionStatus.inside)
-                            FutureBuilder<SessionBooking>(
-                              future: ParseAuthService.getSessionBooking(
-                                  widget.servicePoint, widget.subscriber.token),
-                              builder: (BuildContext context,
-                                  AsyncSnapshot<SessionBooking> snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return CircularProgressIndicator();
-                                } else {
-                                  if (snapshot.hasData) {
-                                    _setSessionEndTime(snapshot.data);
-                                    return CountdownTimer(
-                                        controller: sessionHoursController,
-                                        widgetBuilder:
-                                            (context, remainingTime) {
-                                          print(
-                                              'remaining hours: ${remainingTime.hours}');
-                                          return (remainingTime.hours >= 1)
-                                              ? Text(
-                                                  '${remainingTime.hours} hours left!',
-                                                  style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 24.0),
-                                                )
-                                              : BlinkingText(
-                                                  'Only ${remainingTime.min} mins left!',
-                                                  TextStyle(
-                                                      color: Colors.red,
-                                                      fontSize: 24.0),
-                                                );
-                                        });
-                                  } else {
-                                    return CircularProgressIndicator();
-                                  }
-                                }
-                              },
-                            )
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 5.0,
-                    shadowColor: Colors.grey,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    color: Colors.teal,
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: EdgeInsets.all(8.0),
-                      height: MediaQuery.of(context).size.height * 0.25,
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      child: Text(
-                        '${widget.subscriber.approvedAt.toLocal()}',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
+                  _sessionWidget(context),
+                  _announcementWidget(context),
                 ],
               ),
             ),
@@ -354,6 +273,112 @@ class _LibraryHomeState extends State<LibraryHome> {
     } else {
       _callSnackBar('Could not end session. Try again!');
     }
+  }
+
+  Widget _sessionWidget(BuildContext context) {
+    return Card(
+      elevation: 5.0,
+      shadowColor: Colors.grey,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      color: Colors.teal,
+      child: Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(8.0),
+        height: MediaQuery.of(context).size.height * 0.25,
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${statusToName[widget.subscriber.sessionStatus]}',
+              style: TextStyle(color: Colors.white, fontSize: 24.0),
+            ),
+            if (widget.subscriber.sessionStatus == SessionStatus.inside)
+              FutureBuilder<SessionBooking>(
+                future: ParseAuthService.getSessionBooking(
+                    widget.servicePoint, widget.subscriber.token),
+                builder: (BuildContext context,
+                    AsyncSnapshot<SessionBooking> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else {
+                    if (snapshot.hasData) {
+                      _setSessionEndTime(snapshot.data);
+                      return CountdownTimer(
+                          controller: sessionHoursController,
+                          widgetBuilder: (context, remainingTime) {
+                            print('remaining hours: ${remainingTime.hours}');
+                            if (remainingTime.hours < 1 &&
+                                remainingTime.min < 1) _onEndPressed();
+                            return (remainingTime.hours >= 1)
+                                ? Text(
+                                    '${remainingTime.hours} hours left!',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 24.0),
+                                  )
+                                : BlinkingText(
+                                    'Only ${remainingTime.min} mins left!',
+                                    TextStyle(
+                                        color: Colors.red, fontSize: 24.0),
+                                  );
+                          });
+                    } else {
+                      return CircularProgressIndicator();
+                    }
+                  }
+                },
+              )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _announcementWidget(BuildContext context) {
+    return Card(
+      elevation: 5.0,
+      shadowColor: Colors.grey,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      color: Colors.teal,
+      child: Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(16.0),
+        height: MediaQuery.of(context).size.height * 0.25,
+        width: MediaQuery.of(context).size.width * 0.8,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FutureBuilder<LibraryAnnouncement>(
+              future:
+                  ParseAuthService.getLibraryAnnouncement(widget.servicePoint),
+              // initialData: InitialData,
+              builder: (BuildContext context,
+                  AsyncSnapshot<LibraryAnnouncement> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else {
+                  String announcement;
+                  if (snapshot.hasData) {
+                    announcement = snapshot.data.toJson()['message'];
+                  } else {
+                    announcement = '';
+                  }
+                  return Text(
+                    announcement,
+                    style: TextStyle(color: Colors.white, fontSize: 16.0),
+                    textAlign: TextAlign.justify,
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
